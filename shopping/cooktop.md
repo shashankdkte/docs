@@ -23,7 +23,7 @@
 ## 🥇 Prestige Iris – Best Overall (8.7 / 10)
 
 
-::contentReference[oaicite:0]{index=0}
+![Prestige Iris 3 Burner](https://m.media-amazon.com/images/I/71QpZB0J0qL._SX679_.jpg)
 
 
 **Why it ranks #1**
