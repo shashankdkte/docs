@@ -64,4 +64,57 @@ Warranty, after-sales clarity, burner material, build/value.
 **Warranty:** **2 Years**  
 **Why #3:** Best value under ~₹2.5k with 2-year warranty
 
-![Pigeon Aster 3 Burner](https://images-eu.ssl-images-amazon.com/images/I/61QFIls884L._AC_UL116)
+![Pigeon Aster 3 Burner](https://images-eu.ssl-images-amazon.com/images/I/61QFIls884L._AC_UL116_SR116%2C116_.jpg)
+
+**Buy link (example):**  
+- Amazon: https://www.amazon.in/Pigeon-Stoverkraft-Glass-Aster-Burner/dp/B07VQYPH5Q
+
+---
+
+### 4) Lifelong LLGS803 3-Burner (Auto Ignition) — **7.2/10**
+**Market price:** **₹2,089**  
+**Warranty:** **1 Year**  
+**Why #4:** Budget auto-ignition; warranty is shorter (1 yr)
+
+![Lifelong 3 Burner](https://m.media-amazon.com/images/I/31UeYONkEwL._SY300_SX300_QL70_ML2_.jpg)
+
+**Buy link (example):**  
+- Amazon: https://www.amazon.in/Lifelong-LLGS803-Efficiency-Toughened-Certified/dp/B0C53S5J9D
+
+---
+
+### 5) Sigri-wala Surya Primecook 3-Burner (Auto Ignition) — **6.9/10**
+**Market price:** **₹2,343 (Flipkart)** / **₹1,702 (brand site)**  
+**Warranty:** **12 months** (Flipkart listing)  
+**Why #5:** Aluminium burners + WhatsApp-driven warranty support → more risk than big brands
+
+![Sigri-wala Surya Primecook 3 Burner](https://rukminim2.flixcart.com/image/416/416/xif0q/gas-stove/u/m/6/3-lpg-7-trio-magic-3b-red-sigri-wala-71-automatic-original-imah7kpyfpzsygme.jpeg?crop=false&q=70)
+
+**Buy link (example):**  
+- Flipkart: https://www.flipkart.com/sigri-wala-surya-primecook-automatic-trio-red-glass-gas-stove/p/itm08676e957f9ad  
+- Brand site: https://sigriwala.com/product/sigri-wala-surya-primecook-3-burner-automatic-glass-gas-stove/
+
+---
+
+### 6) Khaitan BP Jio Black 3-Burner (Manual Ignition) — **6.3/10**
+**Market price:** **₹1,849 (Amazon)** / **₹2,072 (Flipkart)**  
+**Warranty:** **1 year** (Flipkart listing + seller support contacts)  
+**Why #6:** Lowest confidence mainly due to after-sales clarity being seller-driven
+
+![Khaitan BP Jio Black 3 Burner](https://rukminim2.flixcart.com/image/312/312/xif0q/gas-stove/m/o/c/3-lpg-5-3bjiomsci-khaitan-75-manual-original-imahhtzyzqx5kqcw.jpeg?crop=false&q=70)
+
+**Buy link (example):**  
+- Amazon: https://www.amazon.in/Khaitan-Burner-Black-Toughened-Ergonomic/dp/B0CS3P49JP  
+- Flipkart: https://www.flipkart.com/khaitan-3-burner-bp-jio-black-glass-manual-gas-stove/p/itme20900fc1cda9
+
+---
+
+## 🔧 After-Sales Support (where to go)
+
+- **Prestige:** Support + store/service locator available on official Prestige shop site  
+- **Elica:** Official **Service Center Locator** on Elica India  
+- **Pigeon:** Service via **Stovekraft support + service locator flow**  
+- **Lifelong:** Official contact + service/support pages (ticketing/support)  
+- **Sigri-wala / Khaitan:** Warranty/support shown mainly via listing/seller contacts (more variable)
+
+---
