@@ -1,3 +1,4 @@
+```mermaid
 flowchart LR
     A[Small Analytics Team] --> B[More Reports]
     B --> C[More Users]
@@ -6,3 +7,4 @@ flowchart LR
     E --> F[No Clear Ownership]
     F --> G[Cannot Answer:<br/>Who has access & why?]
     G --> H[Audit Risk & Loss of Trust]
+
