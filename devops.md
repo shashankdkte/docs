@@ -133,6 +133,24 @@ Before building extensions, be a **power user** of Azure DevOps.
 | **Boards** | Work items, queries, backlogs, sprints. |
 | **Test Plans** | Test cases, runs, results. |
 
+```mermaid
+flowchart TB
+    subgraph Org["Organization"]
+        subgraph Project["Project"]
+            Repos["Repos"]
+            Pipelines["Pipelines"]
+            Boards["Boards"]
+            Artifacts["Artifacts"]
+            TestPlans["Test Plans"]
+        end
+    end
+    Project --> Repos
+    Project --> Pipelines
+    Project --> Boards
+    Project --> Artifacts
+    Project --> TestPlans
+```
+
 **In brief & deep:** A **Project** is the unit of organization: everything (repos, pipelines, boards) lives under it. **Repos** and **Pipelines** are where code and builds live; **Boards** and **Work items** are where planning and tracking live. Extensions usually operate in the context of “current project” and “current user,” which the SDK gives you after init/ready.
 
 ---
@@ -142,6 +160,13 @@ Before building extensions, be a **power user** of Azure DevOps.
 - **Org → Project → Team → Users/Groups**
 - Permissions: Allow / Deny / Inherit; **Deny wins**.
 - Effective access = object + parents + group memberships.
+
+```mermaid
+flowchart LR
+    Org[Organization] --> Project[Project]
+    Project --> Team[Team]
+    Team --> Users[Users / Groups]
+```
 
 **In brief & deep:** Permissions flow from org down to project, then team and users. A **Deny** anywhere overrides **Allow**; effective access is the combination of the object, its parents, and the user’s group memberships. Your extension runs as the current user—so even if the extension has a scope, the user may get 403 if they lack permission on that resource.
 
@@ -154,6 +179,13 @@ Before building extensions, be a **power user** of Azure DevOps.
 - Boards and backlogs (planning, triage, drag-and-drop).
 
 **In brief & deep:** **Work items** are the units of work (stories, bugs, tasks) with fields (title, state, assigned to) and links (parent/child, related). **WIQL** is the query language; running a query returns **work item IDs only**—you then call the API to get full details for those IDs. Boards and backlogs are views over work items for planning and sprint management.
+
+```mermaid
+flowchart LR
+    WIQL[Run WIQL query] --> IDs[Get work item IDs only]
+    IDs --> Fetch[Fetch work items by IDs]
+    Fetch --> Details[Full fields, links]
+```
 
 ---
 
@@ -187,6 +219,15 @@ An extension is:
 3. **Assets** — HTML/JS/CSS (or React bundles) and images packaged in the extension.
 4. **A VSIX package** — The file you publish to the Marketplace (or share privately).
 
+```mermaid
+flowchart LR
+    M[Manifest] --> C[Contributions]
+    M --> A[Assets]
+    C --> VSIX[VSIX]
+    A --> VSIX
+    VSIX --> MP[Marketplace]
+```
+
 **In brief & deep:** The **manifest** is the contract: it tells Azure DevOps who you are (id, publisher, version), what you add (contributions with type + target + uri), and what files to package (files). The **VSIX** is the zip that gets installed; if a file isn’t in “files,” it won’t be in the package. Contributions are the only way your UI or actions appear in the product.
 
 ---
@@ -201,6 +242,26 @@ An extension is:
 | **PR tab / PR action** | Pull request page | Quality Gate, security scan |
 | **Pipeline** | Build/release summary, menus | Release readiness, links |
 | **Service Hook consumer** | Service Hooks wizard | Custom webhook target |
+
+```mermaid
+flowchart TB
+    subgraph Contribution["Contribution Type"]
+        Hub[Hub]
+        Widget[Widget]
+        WIT[Work Item Form]
+        PR[PR Tab / Action]
+        Pipe[Pipeline]
+        SH[Service Hook]
+    end
+    subgraph Where["Where It Appears"]
+        Hub --> H1[Full page under hub group]
+        Widget --> W1[Dashboard tile]
+        WIT --> W2[Work item Details / tab]
+        PR --> P1[Pull Request page]
+        Pipe --> P2[Build / Release summary]
+        SH --> S1[Service Hooks wizard]
+    end
+```
 
 ### 2.3 Ideation Checklist
 
@@ -266,6 +327,16 @@ Before coding, answer:
 - Context: `getUser()`, `getHost()`, `getWebContext()` (project, team).
 - Widget: `VSS.init()`, `VSS.require()`, `VSS.register()`, `notifyLoadSucceeded()`.
 
+```mermaid
+sequenceDiagram
+    participant Page as Your extension page
+    participant Host as Azure DevOps host
+    Page->>Host: SDK.init()
+    Page->>Host: SDK.ready()
+    Host-->>Page: context (project, user, etc.)
+    Note over Page: Now safe to use getUser(), getWebContext(), getAccessToken()
+```
+
 **In brief & deep:** Your page runs in an iframe; the host doesn’t consider it “loaded” until you call init and (for Hub) ready. **getUser/getHost/getWebContext** give you the current user, org name, and project/team—everything else (calling APIs, showing “current project”) depends on this. For widgets, VSS.init + register + notifyLoadSucceeded follow the same idea: tell the host when you’re ready.
 
 ### ✅ Level 1 Builds
@@ -302,6 +373,17 @@ Before coding, answer:
 - State: idle | loading | ready | error; loading/empty/error UX.
 - Caching (in-memory for Level 2).
 
+```mermaid
+stateDiagram-v2
+    [*] --> idle
+    idle --> loading: fetch data
+    loading --> ready: success
+    loading --> error: failure
+    ready --> loading: refresh / filter
+    error --> loading: retry
+    error --> idle: dismiss
+```
+
 **In brief & deep:** Master/detail means: list on one side, selected item’s details on the other (or below). An **embedded** dialog lives inside your iframe; a **host modal** is the real Azure DevOps modal that blocks the whole page—use it when you want “real” modal behavior (e.g. Add/Edit). Always design for four states: idle, loading, ready, error—so the user never sees a blank screen or unhandled failure.
 
 ---
@@ -334,6 +416,22 @@ Hub with: list view, detail view, add/edit dialog, loading/empty/error states, o
 - **ExtensionDataService** → **ExtensionDataManager** (client APIs).
 - **Settings** (key-value) vs **Documents** (collections, CRUD).
 - **Scopes:** Project Collection (shared) vs User. No built-in "project-only" — use **key namespacing**: e.g. `settings:team:{projectId}:{teamId}`.
+
+```mermaid
+flowchart TB
+    subgraph Storage["Extension Data Storage"]
+        SDK[SDK.getService] --> Mgr[ExtensionDataManager]
+        Mgr --> Settings["Settings (key-value)"]
+        Mgr --> Docs["Documents (collections)"]
+    end
+    subgraph Scopes["Scopes"]
+        Default["Default = Project Collection"]
+        User["User = per user"]
+    end
+    subgraph KeyNamespace["Key namespacing for project/team"]
+        K["settings:team:projectId:teamId"]
+    end
+```
 
 **In brief & deep:** You get the manager via SDK.getService(ExtensionDataService) then getExtensionDataManager(extensionId, token). **Settings** are simple getValue/setValue; **documents** live in named collections and support create/read/update/delete by id. “Project Collection” scope is shared by everyone in the org; “User” is per user. To get “per project” or “per team,” you build keys like `settings:team:{projectId}:{teamId}` and store in Default scope.
 
@@ -376,6 +474,15 @@ Widget + configuration page storing settings **per project/team** (widget instan
 - **Host-provided tokens:** Use **REST clients** (auth automatic) or `SDK.getAccessToken()` for direct calls.
 - **Scopes in manifest:** e.g. `vso.work`, `vso.code`, `vso.build` — request **minimum** required.
 
+```mermaid
+flowchart LR
+    Ext[Your extension] --> getClient[getClient]
+    getClient --> Token[SDK provides token]
+    Token --> Client[REST client]
+    Client --> API[Azure DevOps API]
+    API --> Response[Response]
+```
+
 **In brief & deep:** When you use the official REST clients (e.g. getClient(WorkItemTrackingRestClient)), the client gets a token from the SDK and sets the Authorization header—you don’t touch the token. If you call a REST endpoint directly (e.g. fetch), you use SDK.getAccessToken() and set Bearer in the header. Scopes in the manifest are what admins approve at install; request only what you need so approval is easier and risk is lower.
 
 ---
@@ -395,6 +502,14 @@ Widget + configuration page storing settings **per project/team** (widget instan
 - **Pagination:** `x-ms-continuationtoken` — loop until no token.
 - **Throttling:** Honor **Retry-After**; handle **429** with backoff.
 - **Incremental fetch:** e.g. "changes since last time" + cache.
+
+```mermaid
+flowchart LR
+    A[Call list API] --> B{Has x-ms-continuationtoken?}
+    B -->|Yes| C[Call again with continuationToken]
+    C --> B
+    B -->|No| D[All pages received]
+```
 
 **In brief & deep:** Many list APIs return a continuation token in the response (e.g. header x-ms-continuationtoken); you pass it back in the next request to get the next page—repeat until no token. Throttling means Azure DevOps may return HTTP 429 or send Retry-After; your code must wait (use Retry-After if present, else exponential backoff) and retry. Incremental fetch (“give me items updated since X”) plus caching keeps the UI fast and avoids hammering the API.
 
@@ -436,10 +551,38 @@ For each contribution decide:
 | PR | **ms.vss-code-web.pr-tabs**, **ms.vss-code-web.pull-request-action-menu** |
 | Pipeline | completed-build-menu, pipelines-header-menu |
 
+```mermaid
+flowchart TB
+    subgraph Host["Azure DevOps host"]
+        WIT[Work item form]
+        Board[Boards / Backlog]
+        PR[Pull Request]
+        Pipe[Pipelines]
+    end
+    WIT --> Group[form group]
+    WIT --> Page[form page]
+    WIT --> Control[custom control]
+    PR --> Tab[PR tab]
+    PR --> Action[PR action]
+    Board --> CardMenu[card menu]
+    Pipe --> BuildMenu[build menu]
+```
+
 ### 5.3 Real Enforcement: PR Status + Status Policy
 
 - **UI tab** = great UX and "fix steps"; it does **not** block merge by itself.
 - To **gate merges:** post **Pull Request Status** (pending/succeeded/failed); use a **Status Policy** to require success.
+
+```mermaid
+sequenceDiagram
+    participant Ext as Your extension/backend
+    participant API as PR Statuses API
+    participant Policy as Status Policy
+    Ext->>API: POST status (pending)
+    Ext->>API: POST status (succeeded/failed)
+    Policy->>API: Check status
+    Policy-->>Ext: Block merge if failed
+```
 
 **In brief & deep:** A PR tab is just a view—users can still merge if they ignore it. To **actually block** merge, you post a **PR status** (via the Pull Request Statuses API) with a unique context name (e.g. "quality-gate"); then the org admin adds a **Status Policy** on the branch that requires that status to be “succeeded.” The tab then becomes the “explain why it failed and how to fix it” surface; the policy does the enforcement.
 
@@ -466,6 +609,17 @@ For each contribution decide:
 - **Events:** e.g. `git.pullrequest.created`, `workitem.created`, `build.complete`.
 - **Create subscription:** UI (Project Settings → Service hooks) or REST (Subscriptions API).
 
+```mermaid
+flowchart LR
+    Event[Event occurs] --> Publisher[Publisher]
+    Publisher --> Sub[Subscription]
+    Sub --> Filter[Filters: project, repo]
+    Filter --> Consumer[Consumer]
+    Consumer --> Webhook[Webhook URL]
+    Consumer --> Bus[Service Bus]
+    Consumer --> Storage[Storage]
+```
+
 **In brief & deep:** A **publisher** emits events (e.g. “PR created”); a **subscription** says “when this event happens for this project/repo, send to this consumer.” The consumer can be a webhook URL (your backend), Azure Service Bus, or Storage. You create subscriptions in the UI (Service hooks) or via the Subscriptions REST API; webhooks cannot target localhost—you need a public HTTPS URL.
 
 ---
@@ -477,6 +631,18 @@ For each contribution decide:
 - **Idempotency:** store event ID; ignore duplicates (retries, replays).
 - **Respond fast:** validate → enqueue → return 200; process async.
 
+```mermaid
+flowchart TB
+    Request[HTTP POST] --> Validate[Validate secret + payload]
+    Validate --> Idempotent{Event ID seen?}
+    Idempotent -->|Yes| Return200[Return 200, do nothing]
+    Idempotent -->|No| Enqueue[Enqueue job]
+    Enqueue --> Return200
+    Enqueue --> Worker[Background worker]
+    Worker --> Process[Process event]
+    Process --> Post[Post PR status / audit]
+```
+
 **In brief & deep:** Your receiver must use **HTTPS** so the payload isn’t sent in the clear. Add a **shared secret** in a header (e.g. X-MySecret) and reject requests that don’t match. **Idempotency** means: store the event id from the payload; if you’ve already processed it, return 200 and do nothing—so Azure DevOps retries or replays don’t run the same logic twice. Return **200 quickly** (after validation and enqueue); do heavy work in a background worker so you don’t time out and trigger retries.
 
 ---
@@ -487,6 +653,17 @@ For each contribution decide:
 - Options: Azure Functions (recommended), Node/Express, or hybrid.
 - Storage: e.g. tenants, audit_events, processed_events.
 - **Token strategy:** OAuth app (multi-tenant) or PAT (internal only, locked down).
+
+```mermaid
+flowchart TB
+    ADO[Azure DevOps] -->|Service Hook| Webhook[Your webhook endpoint]
+    Webhook --> Validate[Validate + enqueue]
+    Validate --> Queue[Queue / DB]
+    Queue --> Worker[Background worker]
+    Worker --> Process[Process event]
+    Worker --> API[PR Statuses API]
+    API --> ADO
+```
 
 **In brief & deep:** You need a backend when: events must be processed without a user (webhooks), work is heavy (e.g. scanning), or you post status back to Azure DevOps (your backend needs a token). **Azure Functions** is a good fit (HTTP trigger → queue → worker). Store at least: which org/project, event id (for idempotency), and audit (what you did). For posting back, use OAuth for multi-tenant or a locked-down PAT for internal use only.
 
@@ -518,6 +695,20 @@ Extension + backend: subscribe to **PR created** → webhook receiver → proces
 
 - **Extension scopes** (manifest) — what the extension *can* do; admins approve at install.
 - **Azure DevOps permissions** — what the *user* may do; always check before sensitive actions.
+
+```mermaid
+flowchart TB
+    subgraph Gate1["Gate 1: Extension scopes"]
+        S1[What extension CAN do]
+        S2[Admins approve at install]
+    end
+    subgraph Gate2["Gate 2: User permissions"]
+        P1[What current user MAY do]
+        P2[Check before sensitive action]
+        P3[Handle 403 from API]
+    end
+    Gate1 --> Gate2
+```
 
 **In brief & deep:** **Scopes** are the extension’s capability boundary: “this extension can read/write work items.” Admins see them at install. **Permissions** are the user boundary: “this user may edit work items in this project.” Even if the extension has vso.work_write, the current user might not—so before bulk update or admin actions, check permission (e.g. Security API hasPermissionsBatch) and always handle 403 from the API.
 
@@ -565,6 +756,23 @@ Add **RBAC** (e.g. Reader / Operator / Admin) and **secure configuration** (Proj
 - **Caching:** L1 (in-memory), L2 (ExtensionDataService), L3 (backend when needed).
 - **Virtualization:** Virtualized lists (e.g. FixedHeightList) for large tables.
 
+```mermaid
+flowchart LR
+    subgraph Phase1["Phase 1: Index"]
+        A[Run query / list API] --> B[Get IDs only]
+        B --> C[Store in memory]
+    end
+    subgraph Phase2["Phase 2: Details"]
+        C --> D[Fetch details for visible rows]
+        D --> E[Render table]
+    end
+    subgraph Cache["Caching layers"]
+        L1[L1: In-memory]
+        L2[L2: ExtensionDataService]
+        L3[L3: Backend]
+    end
+```
+
 **In brief & deep:** **Two-phase fetch** means: first call returns only IDs (or minimal metadata); then you fetch full details only for the rows the user sees (and maybe the next page). That keeps the first paint fast and avoids loading 10k work item bodies at once. **Continuation tokens** let you page through large result sets without missing data. **Virtualization** renders only visible rows so the DOM stays small and scrolling stays smooth. **Caching** (L1 in memory, L2 in Extension Data, L3 in backend) avoids repeated heavy calls.
 
 ---
@@ -574,6 +782,17 @@ Add **RBAC** (e.g. Reader / Operator / Admin) and **secure configuration** (Proj
 - **Retry/backoff:** Honor Retry-After; on 429, exponential backoff.
 - **Circuit breaker:** After N failures, stop calling; show "Service busy"; retry after cooldown.
 - **Concurrency:** Limit concurrent API calls (e.g. 2–4); batch where possible.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Closed
+    Closed --> Open: N failures in a row
+    Open --> HalfOpen: After cooldown
+    HalfOpen --> Closed: Test request succeeds
+    HalfOpen --> Open: Test request fails
+    Note right of Open: Show "Service busy"
+    Note right of Closed: Normal API calls
+```
 
 **In brief & deep:** When Azure DevOps returns **429** or sends **Retry-After**, your code must wait (use Retry-After if present, else exponential backoff) and retry—otherwise you keep hammering and stay throttled. A **circuit breaker** stops calling after N consecutive failures, shows "Service busy," and only retries after a cooldown so the user and the API get relief. **Concurrency limits** (e.g. max 2–4 in-flight API calls) prevent your own code from causing throttling.
 
@@ -607,6 +826,22 @@ Add **RBAC** (e.g. Reader / Operator / Admin) and **secure configuration** (Proj
 - **VSIX:** `npx tfx-cli extension create`; keep **&lt; 50 MB** (bundle, tree-shake, no test/screenshots in package).
 - **Version:** SemVer; **version must increase** on every publish (use `--rev-version` or Git-driven bumps).
 - **Dev vs Prod:** Maintain **two extensions** (e.g. `myext` and `myext-dev`) with separate manifests; test on dev, ship prod.
+
+```mermaid
+flowchart LR
+    subgraph Dev["Dev extension (private)"]
+        D1[myext-dev]
+        D2[Shared to your org only]
+    end
+    subgraph Prod["Prod extension"]
+        P1[myext]
+        P2[Public or shared to customers]
+    end
+    Code[Same codebase] --> D1
+    Code --> P1
+    D1 --> Test[Test here first]
+    Test --> P1
+```
 
 **In brief & deep:** The **VSIX** is built from your folder; only files listed in the manifest “files” section are included—so exclude tests, storybooks, and duplicate assets to keep size under 50 MB (Microsoft recommends optimizing if larger). The Marketplace **rejects** a publish if the version doesn’t increase; use **--rev-version** to auto-bump patch or use Changesets/semantic-release. **Dev vs prod** means two extension IDs (e.g. myext-dev and myext) with separate manifests so you test on dev and only publish prod when ready.
 
@@ -681,6 +916,32 @@ Polish **one** extension to market-ready: dev/prod manifests, clean VSIX, listin
 - **Shared packages:** `core` (logging, retry, context, storage keys), `api` (clients, paging), `ui` (Loading/Empty/Error, VirtualizedTable), `test-utils` (mocks, fixtures).
 - **Tooling:** pnpm workspaces, Turborepo (or Nx); shared TS/ESLint/Prettier.
 
+```mermaid
+flowchart TB
+    subgraph Repo["Monorepo"]
+        subgraph Packages["Shared packages"]
+            Core[core: logging, retry, storage]
+            Api[api: clients, paging]
+            UI[ui: Loading, Error, Table]
+            Test[test-utils: mocks]
+        end
+        subgraph Extensions["Extensions"]
+            E1[PR Quality Gate]
+            E2[Work Item Assistant]
+            E3[Reporting Hub]
+        end
+    end
+    Core --> E1
+    Core --> E2
+    Core --> E3
+    Api --> E1
+    Api --> E2
+    Api --> E3
+    UI --> E1
+    UI --> E2
+    UI --> E3
+```
+
 **In brief & deep:** A **monorepo** holds multiple extensions and shared packages in one repo. **core** = logging, retry, context, storage key helpers. **api** = getClient wrappers, paging, throttling. **ui** = shared components (Loading/Empty/Error, VirtualizedTable). **test-utils** = mocks and fixtures. pnpm workspaces + Turborepo (or Nx) give you one install, one build, and cached tests; shared TS/ESLint/Prettier keep style and types consistent.
 
 ---
@@ -726,6 +987,13 @@ Polish **one** extension to market-ready: dev/prod manifests, clean VSIX, listin
 3. **Install:** In org, install from Marketplace (or private share); configure if needed.
 4. **Verify:** Use extension in real project; check permissions and behavior.
 
+```mermaid
+flowchart LR
+    Pkg[Package\n tfx extension create] --> Pub[Publish\n tfx extension publish]
+    Pub --> Inst[Install\n Org admin]
+    Inst --> Ver[Verify\n Use in project]
+```
+
 **In brief & deep:** **Package** creates the .vsix from your folder using the manifest’s “files” section. **Publish** uploads to the Marketplace; you need a PAT with All orgs + Marketplace (publish). **--share-with** makes the extension installable by that org. **Install** is done by the org admin from the Marketplace (or from your private share). **Verify** means using the extension in a real project and checking that scopes and behavior match expectations.
 
 ---
@@ -743,6 +1011,16 @@ Polish **one** extension to market-ready: dev/prod manifests, clean VSIX, listin
 ---
 
 # Quick Reference
+
+```mermaid
+flowchart LR
+    subgraph Lifecycle["Extension lifecycle"]
+        I[Ideation] --> D[Development]
+        D --> P[Package VSIX]
+        P --> Pub[Publish]
+        Pub --> M[Marketplace / Install]
+    end
+```
 
 **In brief & deep:** The Quick Reference is your **cheat sheet**: manifest sections (identity, targets, contributions, files, scopes), SDK rules (init → ready, notifyLoadSucceeded, getClient), scope-to-need mapping, and contribution type ↔ target examples. Use it when you’re coding and need to recall “what’s the PR tab target?” or “what scope do I need for work items?” without re-reading a full chapter.
 
@@ -800,6 +1078,15 @@ Polish **one** extension to market-ready: dev/prod manifests, clean VSIX, listin
 | PR action | ms.vss-web.action | ms.vss-code-web.pull-request-action-menu |
 | Work item group | ms.vss-work-web.work-item-form-group | ms.vss-work-web.work-item-form |
 | Widget config | ms.vss-dashboards-web.widget-configuration | ms.vss-dashboards-web.widget-configuration |
+
+```mermaid
+flowchart LR
+    Type[Contribution type] --> Target[Target ID]
+    Target --> Where[Where it appears]
+    Hub[ms.vss-web.hub] --> CodeHub[code-hub-group]
+    Tab[ms.vss-web.tab] --> PRTabs[pr-tabs]
+    Widget[ms.vss-dashboards-web.widget] --> Catalog[widget-catalog]
+```
 
 **In brief & deep:** Each contribution needs a **type** (what it is: hub, tab, widget, action) and a **target** (where it appears: e.g. pr-tabs, work-item-form). The target ID is a string the host uses to inject your UI; if the target is wrong, your contribution won’t show up. Use the official targets list (Microsoft Learn) when adding a new contribution.
 
