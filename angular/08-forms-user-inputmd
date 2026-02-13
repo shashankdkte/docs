@@ -1,0 +1,750 @@
+# 8) Forms (User input)
+
+[← Previous: Routing (Multiple pages inside SPA)](./07-routing-multiple-pages-inside-spamd) | [Next: HTTP & APIs →](./09-http-and-apismd)
+
+---
+
+### Template-driven Forms — easiest, uses ngModel
+
+**Explanation:**
+Template-driven forms use `ngModel` and directives in the template. They're simpler to set up but less flexible than reactive forms. Best for simple forms with basic validation.
+
+**Template-driven Form Flow:**
+```mermaid
+graph LR
+    A[Template] --> B[ngModel]
+    B --> C[Form State]
+    C --> D[Validation]
+    D --> E[Submit]
+```
+
+**Form Architecture:**
+```mermaid
+graph TD
+    A[Template-driven Form] --> B[ngForm Directive]
+    A --> C[ngModel]
+    A --> D[Validation Directives]
+    
+    B --> E[Form Object]
+    C --> F[Two-way Binding]
+    D --> G[Error Messages]
+```
+
+**Code Sample - Basic Template-driven Form:**
+```typescript
+// login.component.ts
+import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-login',
+  standalone: true,
+  imports: [FormsModule],
+  template: `
+    <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)">
+      <div>
+        <label>Email:</label>
+        <input 
+          type="email" 
+          name="email"
+          [(ngModel)]="user.email"
+          required
+          email
+          #email="ngModel">
+        <div *ngIf="email.invalid && email.touched">
+          <span *ngIf="email.errors?.['required']">Email is required</span>
+          <span *ngIf="email.errors?.['email']">Invalid email format</span>
+        </div>
+      </div>
+      
+      <div>
+        <label>Password:</label>
+        <input 
+          type="password" 
+          name="password"
+          [(ngModel)]="user.password"
+          required
+          minlength="6"
+          #password="ngModel">
+        <div *ngIf="password.invalid && password.touched">
+          <span *ngIf="password.errors?.['required']">Password is required</span>
+          <span *ngIf="password.errors?.['minlength']">
+            Password must be at least 6 characters
+          </span>
+        </div>
+      </div>
+      
+      <button type="submit" [disabled]="loginForm.invalid">
+        Login
+      </button>
+    </form>
+    
+    <pre>Form valid: {{ loginForm.valid }}</pre>
+    <pre>Form value: {{ loginForm.value | json }}</pre>
+  `
+})
+export class LoginComponent {
+  user = {
+    email: '',
+    password: ''
+  };
+  
+  onSubmit(form: any): void {
+    if (form.valid) {
+      console.log('Form submitted:', form.value);
+      // Handle form submission
+    }
+  }
+}
+```
+
+**Form State Properties:**
+```mermaid
+graph TD
+    A[Form State] --> B[valid/invalid]
+    A --> C[pristine/dirty]
+    A --> D[touched/untouched]
+    A --> E[errors]
+    
+    B --> F[Can Submit?]
+    C --> G[Has Changes?]
+    D --> H[User Interacted?]
+    E --> I[Validation Messages]
+```
+
+**Code Sample - Advanced Template-driven Form:**
+```typescript
+// registration.component.ts
+@Component({
+  selector: 'app-registration',
+  standalone: true,
+  imports: [FormsModule],
+  template: `
+    <form #regForm="ngForm" (ngSubmit)="onSubmit(regForm)">
+      <div>
+        <label>Username:</label>
+        <input 
+          name="username"
+          [(ngModel)]="user.username"
+          required
+          minlength="3"
+          pattern="[a-zA-Z0-9]+"
+          #username="ngModel">
+        <div *ngIf="username.invalid && username.touched">
+          <span *ngIf="username.errors?.['required']">Username required</span>
+          <span *ngIf="username.errors?.['minlength']">Min 3 characters</span>
+          <span *ngIf="username.errors?.['pattern']">Alphanumeric only</span>
+        </div>
+      </div>
+      
+      <div>
+        <label>Age:</label>
+        <input 
+          type="number"
+          name="age"
+          [(ngModel)]="user.age"
+          required
+          min="18"
+          max="100"
+          #age="ngModel">
+        <div *ngIf="age.invalid && age.touched">
+          <span *ngIf="age.errors?.['min']">Must be 18 or older</span>
+          <span *ngIf="age.errors?.['max']">Must be 100 or younger</span>
+        </div>
+      </div>
+      
+      <div>
+        <label>
+          <input 
+            type="checkbox"
+            name="terms"
+            [(ngModel)]="user.acceptTerms"
+            required
+            #terms="ngModel">
+          I accept the terms
+        </label>
+        <div *ngIf="terms.invalid && terms.touched">
+          You must accept the terms
+        </div>
+      </div>
+      
+      <button type="submit" [disabled]="regForm.invalid">
+        Register
+      </button>
+    </form>
+  `
+})
+export class RegistrationComponent {
+  user = {
+    username: '',
+    age: null,
+    acceptTerms: false
+  };
+  
+  onSubmit(form: any): void {
+    console.log('Registration data:', form.value);
+  }
+}
+```
+
+---
+
+### Reactive Forms — scalable, uses FormGroup, FormControl
+
+**Explanation:**
+Reactive forms use `FormGroup` and `FormControl` classes defined in the component TypeScript. They provide more control, better testability, and are ideal for complex forms.
+
+**Reactive Form Architecture:**
+```mermaid
+graph TD
+    A[Reactive Forms] --> B[FormGroup]
+    A --> C[FormControl]
+    A --> D[FormBuilder]
+    
+    B --> E[Form Container]
+    C --> F[Individual Fields]
+    D --> G[Helper to Create Forms]
+```
+
+**Reactive vs Template-driven:**
+```mermaid
+graph LR
+    A[Form Approach] --> B[Template-driven]
+    A --> C[Reactive]
+    
+    B --> D[Simple]
+    B --> E[Less Control]
+    
+    C --> F[Complex]
+    C --> G[Full Control]
+```
+
+**Code Sample - Basic Reactive Form:**
+```typescript
+// login.component.ts
+import { Component, OnInit } from '@angular/core';
+import { FormGroup, FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-login',
+  standalone: true,
+  imports: [ReactiveFormsModule],
+  template: `
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div>
+        <label>Email:</label>
+        <input 
+          type="email" 
+          formControlName="email">
+        <div *ngIf="email.invalid && email.touched">
+          <span *ngIf="email.hasError('required')">Email is required</span>
+          <span *ngIf="email.hasError('email')">Invalid email</span>
+        </div>
+      </div>
+      
+      <div>
+        <label>Password:</label>
+        <input 
+          type="password" 
+          formControlName="password">
+        <div *ngIf="password.invalid && password.touched">
+          <span *ngIf="password.hasError('required')">Password required</span>
+          <span *ngIf="password.hasError('minlength')">
+            Min 6 characters
+          </span>
+        </div>
+      </div>
+      
+      <button type="submit" [disabled]="loginForm.invalid">
+        Login
+      </button>
+    </form>
+  `
+})
+export class LoginComponent implements OnInit {
+  loginForm!: FormGroup;
+  
+  constructor() {}
+  
+  ngOnInit(): void {
+    this.loginForm = new FormGroup({
+      email: new FormControl('', [
+        Validators.required,
+        Validators.email
+      ]),
+      password: new FormControl('', [
+        Validators.required,
+        Validators.minLength(6)
+      ])
+    });
+  }
+  
+  get email() {
+    return this.loginForm.get('email')!;
+  }
+  
+  get password() {
+    return this.loginForm.get('password')!;
+  }
+  
+  onSubmit(): void {
+    if (this.loginForm.valid) {
+      console.log('Form value:', this.loginForm.value);
+      console.log('Form valid:', this.loginForm.valid);
+    }
+  }
+}
+```
+
+**Code Sample - Using FormBuilder:**
+```typescript
+// registration.component.ts
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-registration',
+  standalone: true,
+  imports: [ReactiveFormsModule],
+  template: `
+    <form [formGroup]="registrationForm" (ngSubmit)="onSubmit()">
+      <div formGroupName="personalInfo">
+        <div>
+          <label>First Name:</label>
+          <input formControlName="firstName">
+          <span *ngIf="firstName.invalid && firstName.touched">
+            Required
+          </span>
+        </div>
+        
+        <div>
+          <label>Last Name:</label>
+          <input formControlName="lastName">
+        </div>
+      </div>
+      
+      <div formArrayName="hobbies">
+        <h4>Hobbies</h4>
+        <button type="button" (click)="addHobby()">Add Hobby</button>
+        <div *ngFor="let hobby of hobbies.controls; let i = index">
+          <input [formControlName]="i">
+          <button type="button" (click)="removeHobby(i)">Remove</button>
+        </div>
+      </div>
+      
+      <button type="submit" [disabled]="registrationForm.invalid">
+        Register
+      </button>
+    </form>
+  `
+})
+export class RegistrationComponent implements OnInit {
+  registrationForm!: FormGroup;
+  
+  constructor(private fb: FormBuilder) {}
+  
+  ngOnInit(): void {
+    this.registrationForm = this.fb.group({
+      personalInfo: this.fb.group({
+        firstName: ['', Validators.required],
+        lastName: ['', Validators.required]
+      }),
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      hobbies: this.fb.array([])
+    });
+  }
+  
+  get hobbies() {
+    return this.registrationForm.get('hobbies') as any;
+  }
+  
+  get firstName() {
+    return this.registrationForm.get('personalInfo.firstName')!;
+  }
+  
+  addHobby(): void {
+    this.hobbies.push(this.fb.control(''));
+  }
+  
+  removeHobby(index: number): void {
+    this.hobbies.removeAt(index);
+  }
+  
+  onSubmit(): void {
+    console.log('Form value:', this.registrationForm.value);
+  }
+}
+```
+
+**Form Control Methods:**
+```mermaid
+graph TD
+    A[FormControl Methods] --> B[setValue]
+    A --> C[patchValue]
+    A --> D[reset]
+    A --> E[disable/enable]
+    
+    B --> F[Set All Values]
+    C --> G[Partial Update]
+    D --> H[Reset Form]
+    E --> I[Control State]
+```
+
+---
+
+### Validation — required, minLength, custom validators
+
+**Explanation:**
+Form validation ensures data integrity by checking input against rules. Angular provides built-in validators and allows custom validators for complex validation logic.
+
+**Validation Types:**
+```mermaid
+graph TD
+    A[Validation] --> B[Built-in Validators]
+    A --> C[Custom Validators]
+    A --> D[Async Validators]
+    
+    B --> E[required, email, minLength]
+    C --> F[Business Logic]
+    D --> G[Server Validation]
+```
+
+**Validation Flow:**
+```mermaid
+sequenceDiagram
+    participant User
+    participant FormControl
+    participant Validator
+    participant Component
+
+    User->>FormControl: Enter value
+    FormControl->>Validator: Run validators
+    Validator->>FormControl: Return errors/null
+    FormControl->>Component: Update state
+    Component->>User: Show error messages
+```
+
+**Code Sample - Built-in Validators:**
+```typescript
+// component.ts
+import { FormGroup, FormControl, Validators } from '@angular/forms';
+
+this.form = new FormGroup({
+  // Required validator
+  name: new FormControl('', Validators.required),
+  
+  // Email validator
+  email: new FormControl('', [
+    Validators.required,
+    Validators.email
+  ]),
+  
+  // Min/Max length
+  username: new FormControl('', [
+    Validators.required,
+    Validators.minLength(3),
+    Validators.maxLength(20)
+  ]),
+  
+  // Pattern (regex)
+  phone: new FormControl('', [
+    Validators.required,
+    Validators.pattern(/^\d{10}$/)
+  ]),
+  
+  // Min/Max value (for numbers)
+  age: new FormControl('', [
+    Validators.required,
+    Validators.min(18),
+    Validators.max(100)
+  ])
+});
+```
+
+**Code Sample - Custom Validator:**
+```typescript
+// validators.ts
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+
+// Custom validator function
+export function passwordStrengthValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value;
+    if (!value) {
+      return null; // Don't validate empty values
+    }
+    
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasLowerCase = /[a-z]/.test(value);
+    const hasNumeric = /[0-9]/.test(value);
+    const hasSpecialChar = /[!@#$%^&*]/.test(value);
+    
+    const passwordValid = hasUpperCase && hasLowerCase && hasNumeric && hasSpecialChar;
+    
+    return !passwordValid 
+      ? { passwordStrength: { 
+          message: 'Password must contain uppercase, lowercase, number, and special character' 
+        }}
+      : null;
+  };
+}
+
+// Custom validator for matching passwords
+export function passwordMatchValidator(controlName: string, matchingControlName: string): ValidatorFn {
+  return (formGroup: AbstractControl): ValidationErrors | null => {
+    const control = formGroup.get(controlName);
+    const matchingControl = formGroup.get(matchingControlName);
+    
+    if (!control || !matchingControl) {
+      return null;
+    }
+    
+    if (matchingControl.errors && !matchingControl.errors['passwordMismatch']) {
+      return null;
+    }
+    
+    if (control.value !== matchingControl.value) {
+      matchingControl.setErrors({ passwordMismatch: true });
+      return { passwordMismatch: true };
+    } else {
+      matchingControl.setErrors(null);
+      return null;
+    }
+  };
+}
+```
+
+**Code Sample - Using Custom Validators:**
+```typescript
+// registration.component.ts
+import { passwordStrengthValidator, passwordMatchValidator } from './validators';
+
+this.registrationForm = this.fb.group({
+  password: ['', [
+    Validators.required,
+    Validators.minLength(8),
+    passwordStrengthValidator()
+  ]],
+  confirmPassword: ['', Validators.required]
+}, {
+  validators: passwordMatchValidator('password', 'confirmPassword')
+});
+```
+
+**Code Sample - Async Validator (Email Check):**
+```typescript
+// email-validator.ts
+import { AbstractControl, AsyncValidatorFn, ValidationErrors } from '@angular/forms';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { UserService } from './user.service';
+
+export function emailExistsValidator(userService: UserService): AsyncValidatorFn {
+  return (control: AbstractControl): Observable<ValidationErrors | null> => {
+    if (!control.value) {
+      return of(null);
+    }
+    
+    return userService.checkEmailExists(control.value).pipe(
+      map(exists => exists ? { emailExists: true } : null),
+      catchError(() => of(null))
+    );
+  };
+}
+```
+
+**Validation Error Display:**
+```mermaid
+graph LR
+    A[FormControl] --> B{Has Errors?}
+    B -->|Yes| C[Show Error Messages]
+    B -->|No| D[Show Success/Valid]
+    
+    C --> E[Display in Template]
+    D --> E
+```
+
+---
+
+### Form Submission Patterns — loading states, error handling
+
+**Explanation:**
+Proper form submission includes handling loading states, errors, and success feedback. This improves user experience and provides clear feedback.
+
+**Submission Flow:**
+```mermaid
+sequenceDiagram
+    participant User
+    participant Form
+    participant Component
+    participant API
+
+    User->>Form: Submit form
+    Form->>Component: Validate
+    Component->>Component: Set loading = true
+    Component->>API: Send request
+    API-->>Component: Response
+    alt Success
+        Component->>Component: Set loading = false
+        Component->>User: Show success message
+    else Error
+        Component->>Component: Set loading = false
+        Component->>User: Show error message
+    end
+```
+
+**Submission Patterns:**
+```mermaid
+graph TD
+    A[Form Submission] --> B[Loading State]
+    A --> C[Error Handling]
+    A --> D[Success Handling]
+    A --> E[Reset Form]
+    
+    B --> F[Disable Submit Button]
+    C --> G[Display Errors]
+    D --> H[Show Success Message]
+    E --> I[Clear Form]
+```
+
+**Code Sample - Complete Form Submission:**
+```typescript
+// contact.component.ts
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ContactService } from './contact.service';
+
+@Component({
+  selector: 'app-contact',
+  standalone: true,
+  imports: [ReactiveFormsModule],
+  template: `
+    <form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
+      <div *ngIf="errorMessage" class="error">
+        {{ errorMessage }}
+      </div>
+      
+      <div *ngIf="successMessage" class="success">
+        {{ successMessage }}
+      </div>
+      
+      <div>
+        <label>Name:</label>
+        <input formControlName="name">
+        <span *ngIf="name.invalid && name.touched">Required</span>
+      </div>
+      
+      <div>
+        <label>Email:</label>
+        <input formControlName="email">
+        <span *ngIf="email.invalid && email.touched">Invalid email</span>
+      </div>
+      
+      <div>
+        <label>Message:</label>
+        <textarea formControlName="message"></textarea>
+        <span *ngIf="message.invalid && message.touched">Required</span>
+      </div>
+      
+      <button 
+        type="submit" 
+        [disabled]="contactForm.invalid || isLoading">
+        <span *ngIf="!isLoading">Submit</span>
+        <span *ngIf="isLoading">Submitting...</span>
+      </button>
+    </form>
+  `
+})
+export class ContactComponent {
+  contactForm: FormGroup;
+  isLoading: boolean = false;
+  errorMessage: string = '';
+  successMessage: string = '';
+  
+  constructor(
+    private fb: FormBuilder,
+    private contactService: ContactService
+  ) {
+    this.contactForm = this.fb.group({
+      name: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      message: ['', Validators.required]
+    });
+  }
+  
+  get name() {
+    return this.contactForm.get('name')!;
+  }
+  
+  get email() {
+    return this.contactForm.get('email')!;
+  }
+  
+  get message() {
+    return this.contactForm.get('message')!;
+  }
+  
+  onSubmit(): void {
+    if (this.contactForm.invalid) {
+      this.markFormGroupTouched(this.contactForm);
+      return;
+    }
+    
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    
+    this.contactService.submitContact(this.contactForm.value).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        this.successMessage = 'Message sent successfully!';
+        this.contactForm.reset();
+        this.markFormGroupUntouched(this.contactForm);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.errorMessage = error.error?.message || 'An error occurred. Please try again.';
+      }
+    });
+  }
+  
+  private markFormGroupTouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsTouched();
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+  
+  private markFormGroupUntouched(formGroup: FormGroup): void {
+    Object.keys(formGroup.controls).forEach(key => {
+      const control = formGroup.get(key);
+      control?.markAsUntouched();
+      if (control instanceof FormGroup) {
+        this.markFormGroupUntouched(control);
+      }
+    });
+  }
+}
+```
+
+**Error Handling Patterns:**
+```mermaid
+graph TD
+    A[Form Submission] --> B{Validation Errors?}
+    B -->|Yes| C[Show Field Errors]
+    B -->|No| D[Submit to API]
+    D --> E{API Response}
+    E -->|Success| F[Show Success]
+    E -->|Error| G[Show Error]
+    G --> H{Field Errors?}
+    H -->|Yes| I[Set Field Errors]
+    H -->|No| J[Show General Error]
+```
+
+---
+
+[← Previous: Routing (Multiple pages inside SPA)](./07-routing-multiple-pages-inside-spamd) | [Next: HTTP & APIs →](./09-http-and-apismd)

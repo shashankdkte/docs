@@ -1,0 +1,575 @@
+# 3) Basic Syntax in Templates (Daily-use)
+
+[← Previous: Angular Core Concepts (What/Why)](./02-angular-core-concepts-whatwhymd) | [Next: Directives (Control the UI) →](./04-directives-control-the-uimd)
+
+---
+
+### Interpolation {{ }} — show TS value in HTML
+
+**Explanation:**
+Interpolation is the simplest way to display component data in templates. Use double curly braces `{{ }}` to embed TypeScript expressions that Angular evaluates and displays.
+
+**How It Works:**
+```mermaid
+graph LR
+    A[Component Property] --> B[{{ expression }}]
+    B --> C[Angular Evaluates]
+    C --> D[Display in HTML]
+```
+
+**Code Sample:**
+```typescript
+// component.ts
+export class InterpolationComponent {
+  title: string = 'Welcome';
+  count: number = 42;
+  isActive: boolean = true;
+  user: { name: string; age: number } = {
+    name: 'John',
+    age: 30
+  };
+  
+  getGreeting(): string {
+    return `Hello, ${this.user.name}!`;
+  }
+}
+```
+
+```html
+<!-- component.html -->
+<div>
+  <!-- Simple property -->
+  <h1>{{ title }}</h1>
+  
+  <!-- Number -->
+  <p>Count: {{ count }}</p>
+  
+  <!-- Boolean (shows true/false) -->
+  <p>Active: {{ isActive }}</p>
+  
+  <!-- Object property -->
+  <p>User: {{ user.name }}, Age: {{ user.age }}</p>
+  
+  <!-- Method call -->
+  <p>{{ getGreeting() }}</p>
+  
+  <!-- Expression -->
+  <p>Total: {{ count * 2 }}</p>
+  
+  <!-- Conditional expression -->
+  <p>Status: {{ isActive ? 'Online' : 'Offline' }}</p>
+</div>
+```
+
+**Interpolation Flow:**
+```mermaid
+sequenceDiagram
+    participant Component
+    participant Angular
+    participant Template
+    participant Browser
+
+    Component->>Angular: title = "Welcome"
+    Angular->>Template: Find {{ title }}
+    Angular->>Angular: Evaluate expression
+    Angular->>Browser: Render "Welcome"
+    
+    Note over Component: title changes to "Hello"
+    Component->>Angular: title = "Hello"
+    Angular->>Browser: Update to "Hello"
+```
+
+---
+
+### Property Binding [prop] — set element property from TS
+
+**Explanation:**
+Property binding uses square brackets `[ ]` to set HTML element properties or Angular component/directive properties from TypeScript. It's one-way: data flows from component to template.
+
+**When to Use:**
+- Set element attributes: `[src]`, `[href]`, `[disabled]`
+- Pass data to child components: `[user]="currentUser"`
+- Set CSS classes conditionally: `[class.active]="isActive"`
+
+**Property Binding Flow:**
+```mermaid
+graph LR
+    A[Component Property] --> B[[property]="value"]
+    B --> C[Angular Updates]
+    C --> D[DOM Element Property]
+```
+
+**Code Sample:**
+```typescript
+// component.ts
+export class PropertyBindingComponent {
+  imageUrl: string = 'https://example.com/image.jpg';
+  buttonDisabled: boolean = false;
+  linkUrl: string = 'https://angular.io';
+  isHighlighted: boolean = true;
+  dynamicClass: string = 'btn-primary';
+  
+  toggleButton(): void {
+    this.buttonDisabled = !this.buttonDisabled;
+  }
+}
+```
+
+```html
+<!-- component.html -->
+<div>
+  <!-- Image source -->
+  <img [src]="imageUrl" [alt]="'Product image'">
+  
+  <!-- Button disabled state -->
+  <button [disabled]="buttonDisabled">Submit</button>
+  <button (click)="toggleButton()">Toggle</button>
+  
+  <!-- Link href -->
+  <a [href]="linkUrl" target="_blank">Visit Angular</a>
+  
+  <!-- CSS class binding -->
+  <div [class.highlight]="isHighlighted">Highlighted content</div>
+  <div [class]="dynamicClass">Dynamic class</div>
+  
+  <!-- Style binding -->
+  <div [style.color]="isHighlighted ? 'red' : 'black'">
+    Colored text
+  </div>
+  <div [style.font-size.px]="16">Font size</div>
+  
+  <!-- Child component input -->
+  <app-user [name]="'John'" [age]="30"></app-user>
+</div>
+```
+
+**Property Binding vs Interpolation:**
+```mermaid
+graph TD
+    A[Display Value] --> B[Use Interpolation<br/>{{ value }}]
+    A --> C[Set Property] --> D[Use Property Binding<br/>[property]="value"]
+    
+    B --> E[Text Content]
+    D --> F[Element Attributes]
+    D --> G[Component Inputs]
+```
+
+---
+
+### Event Binding (event) — run TS method on UI actions
+
+**Explanation:**
+Event binding uses parentheses `( )` to listen to DOM events (clicks, inputs, etc.) and execute component methods. Data flows from template to component.
+
+**Common Events:**
+- `(click)` - Mouse click
+- `(input)` - Input field changes
+- `(change)` - Form control changes
+- `(keyup)`, `(keydown)` - Keyboard events
+- `(focus)`, `(blur)` - Focus events
+
+**Event Binding Flow:**
+```mermaid
+sequenceDiagram
+    participant User
+    participant DOM as DOM Element
+    participant Angular
+    participant Component
+
+    User->>DOM: Click button
+    DOM->>Angular: Event fired
+    Angular->>Component: Call method
+    Component->>Component: Execute logic
+    Component->>Angular: Update if needed
+    Angular->>DOM: Re-render
+```
+
+**Code Sample:**
+```typescript
+// component.ts
+export class EventBindingComponent {
+  message: string = '';
+  count: number = 0;
+  inputValue: string = '';
+  
+  onClick(): void {
+    this.message = 'Button was clicked!';
+    this.count++;
+  }
+  
+  onInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.inputValue = target.value;
+  }
+  
+  onKeyUp(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      console.log('Enter pressed!');
+    }
+  }
+  
+  onMouseEnter(): void {
+    console.log('Mouse entered');
+  }
+  
+  onSubmit(event: Event): void {
+    event.preventDefault();
+    console.log('Form submitted');
+  }
+}
+```
+
+```html
+<!-- component.html -->
+<div>
+  <!-- Click event -->
+  <button (click)="onClick()">Click Me</button>
+  <p>{{ message }}</p>
+  <p>Clicked {{ count }} times</p>
+  
+  <!-- Input event -->
+  <input 
+    type="text" 
+    (input)="onInput($event)"
+    placeholder="Type something">
+  <p>You typed: {{ inputValue }}</p>
+  
+  <!-- Keyboard events -->
+  <input 
+    type="text"
+    (keyup)="onKeyUp($event)"
+    placeholder="Press Enter">
+  
+  <!-- Mouse events -->
+  <div (mouseenter)="onMouseEnter()" 
+       (mouseleave)="onMouseLeave()">
+    Hover over me
+  </div>
+  
+  <!-- Form submission -->
+  <form (submit)="onSubmit($event)">
+    <input type="text" name="username">
+    <button type="submit">Submit</button>
+  </form>
+  
+  <!-- Inline event handling -->
+  <button (click)="count = count + 1">
+    Increment: {{ count }}
+  </button>
+</div>
+```
+
+**Event Object Usage:**
+```mermaid
+graph LR
+    A[Event Fired] --> B[$event Object]
+    B --> C[Event Properties]
+    C --> D[event.target]
+    C --> E[event.type]
+    C --> F[event.key]
+```
+
+---
+
+### Two-way Binding [(ngModel)] — input ↔ TS sync (forms)
+
+**Explanation:**
+Two-way binding combines property binding `[ ]` and event binding `( )` into `[(ngModel)]`. It keeps the component property and form input value synchronized in both directions.
+
+**How Two-way Binding Works:**
+```mermaid
+graph LR
+    A[Component Property] -->|Updates| B[Input Value]
+    B -->|User Types| C[Component Property]
+    A -.->|Sync| C
+    C -.->|Sync| A
+```
+
+**Two-way Binding Flow:**
+```mermaid
+sequenceDiagram
+    participant Component
+    participant Angular
+    participant Input as Input Field
+
+    Component->>Angular: userName = "John"
+    Angular->>Input: Set value to "John"
+    
+    Note over Input: User types "Jane"
+    Input->>Angular: Value changed
+    Angular->>Component: Update userName to "Jane"
+    Component->>Angular: userName = "Jane"
+    Angular->>Input: Confirm sync
+```
+
+**Code Sample:**
+```typescript
+// component.ts
+import { FormsModule } from '@angular/forms';
+
+@Component({
+  standalone: true,
+  imports: [FormsModule], // Required for ngModel
+  // ...
+})
+export class TwoWayBindingComponent {
+  userName: string = '';
+  email: string = '';
+  age: number = 0;
+  isSubscribed: boolean = false;
+  
+  onSubmit(): void {
+    console.log({
+      userName: this.userName,
+      email: this.email,
+      age: this.age,
+      isSubscribed: this.isSubscribed
+    });
+  }
+}
+```
+
+```html
+<!-- component.html -->
+<form (ngSubmit)="onSubmit()">
+  <!-- Text input -->
+  <div>
+    <label>Name:</label>
+    <input type="text" [(ngModel)]="userName" name="userName">
+    <p>Current value: {{ userName }}</p>
+  </div>
+  
+  <!-- Email input -->
+  <div>
+    <label>Email:</label>
+    <input type="email" [(ngModel)]="email" name="email">
+  </div>
+  
+  <!-- Number input -->
+  <div>
+    <label>Age:</label>
+    <input type="number" [(ngModel)]="age" name="age">
+  </div>
+  
+  <!-- Checkbox -->
+  <div>
+    <label>
+      <input type="checkbox" [(ngModel)]="isSubscribed" name="isSubscribed">
+      Subscribe to newsletter
+    </label>
+  </div>
+  
+  <button type="submit">Submit</button>
+</form>
+```
+
+**Note:** Two-way binding is shorthand for:
+```html
+<!-- This: -->
+<input [(ngModel)]="userName">
+
+<!-- Is equivalent to: -->
+<input [ngModel]="userName" (ngModelChange)="userName = $event">
+```
+
+---
+
+### Template Reference #ref — access element value quickly
+
+**Explanation:**
+Template reference variables (using `#` or `ref-`) create a reference to a DOM element or Angular component in the template. You can access it directly without using two-way binding.
+
+**When to Use:**
+- Get input value without binding
+- Access child component methods
+- Pass element to methods
+
+**Template Reference Flow:**
+```mermaid
+graph LR
+    A[#myRef] --> B[Create Reference]
+    B --> C[Access in Template]
+    C --> D[myRef.value]
+    C --> E[Pass to Method]
+```
+
+**Code Sample:**
+```typescript
+// component.ts
+export class TemplateRefComponent {
+  onSubmit(inputRef: HTMLInputElement): void {
+    console.log('Input value:', inputRef.value);
+    // Use value without binding
+  }
+  
+  logElement(element: HTMLElement): void {
+    console.log('Element:', element);
+  }
+}
+```
+
+```html
+<!-- component.html -->
+<div>
+  <!-- Reference to input element -->
+  <input #nameInput type="text" placeholder="Enter name">
+  <button (click)="onSubmit(nameInput)">Submit</button>
+  
+  <!-- Access value directly -->
+  <input #emailInput type="email" placeholder="Email">
+  <p>You entered: {{ emailInput.value }}</p>
+  
+  <!-- Reference to component -->
+  <app-user #userComponent></app-user>
+  <button (click)="userComponent.someMethod()">Call Method</button>
+  
+  <!-- Reference to any element -->
+  <div #myDiv (click)="logElement(myDiv)">
+    Click me to log element
+  </div>
+  
+  <!-- Using ref- prefix (alternative syntax) -->
+  <input ref-username type="text">
+  <button (click)="onSubmit(username)">Submit</button>
+</div>
+```
+
+**Template Reference vs Two-way Binding:**
+```mermaid
+graph TD
+    A[Need Input Value] --> B{When to Access?}
+    B -->|On Submit Only| C[Use Template Reference<br/>#ref]
+    B -->|Always Sync| D[Use Two-way Binding<br/>[(ngModel)]]
+    
+    C --> E[Less Overhead]
+    D --> F[Automatic Sync]
+```
+
+---
+
+### Pipes | — format data in template (date, currency, custom)
+
+**Explanation:**
+Pipes transform data in templates. They format values for display without changing the original data. Angular provides built-in pipes and you can create custom ones.
+
+**Pipe Flow:**
+```mermaid
+graph LR
+    A[Raw Data] --> B[Pipe |]
+    B --> C[Formatted Output]
+    C --> D[Display in Template]
+```
+
+**Common Built-in Pipes:**
+```mermaid
+graph TD
+    A[Pipes] --> B[Date Pipe<br/>| date]
+    A --> C[Currency Pipe<br/>| currency]
+    A --> D[UpperCase/LowerCase<br/>| uppercase]
+    A --> E[JSON Pipe<br/>| json]
+    A --> F[Slice Pipe<br/>| slice]
+    A --> G[Async Pipe<br/>| async]
+```
+
+**Code Sample - Built-in Pipes:**
+```typescript
+// component.ts
+export class PipesComponent {
+  currentDate: Date = new Date();
+  price: number = 99.99;
+  message: string = 'Hello Angular';
+  user: object = { name: 'John', age: 30 };
+  items: string[] = ['Apple', 'Banana', 'Cherry', 'Date'];
+  percentage: number = 0.85;
+}
+```
+
+```html
+<!-- component.html -->
+<div>
+  <!-- Date pipe -->
+  <p>Today: {{ currentDate | date }}</p>
+  <p>Short: {{ currentDate | date:'short' }}</p>
+  <p>Full: {{ currentDate | date:'fullDate' }}</p>
+  <p>Custom: {{ currentDate | date:'MM/dd/yyyy' }}</p>
+  
+  <!-- Currency pipe -->
+  <p>Price: {{ price | currency }}</p>
+  <p>USD: {{ price | currency:'USD' }}</p>
+  <p>EUR: {{ price | currency:'EUR':'symbol':'1.2-2' }}</p>
+  
+  <!-- Uppercase/Lowercase -->
+  <p>Upper: {{ message | uppercase }}</p>
+  <p>Lower: {{ message | lowercase }}</p>
+  <p>Title: {{ message | titlecase }}</p>
+  
+  <!-- JSON pipe (for debugging) -->
+  <pre>{{ user | json }}</pre>
+  
+  <!-- Slice pipe (array/string) -->
+  <p>First 3: {{ items | slice:0:3 }}</p>
+  <p>Text: {{ message | slice:0:5 }}</p>
+  
+  <!-- Decimal pipe -->
+  <p>Number: {{ percentage | number:'1.2-2' }}</p>
+  <p>Percent: {{ percentage | percent }}</p>
+  
+  <!-- Chaining pipes -->
+  <p>{{ currentDate | date:'fullDate' | uppercase }}</p>
+</div>
+```
+
+**Code Sample - Custom Pipe:**
+```typescript
+// truncate.pipe.ts
+import { Pipe, PipeTransform } from '@angular/core';
+
+@Pipe({
+  name: 'truncate',
+  standalone: true
+})
+export class TruncatePipe implements PipeTransform {
+  transform(value: string, limit: number = 20, trail: string = '...'): string {
+    if (!value) return '';
+    return value.length > limit 
+      ? value.substring(0, limit) + trail 
+      : value;
+  }
+}
+```
+
+```typescript
+// component.ts
+import { TruncatePipe } from './truncate.pipe';
+
+@Component({
+  standalone: true,
+  imports: [TruncatePipe],
+  // ...
+})
+export class MyComponent {
+  longText: string = 'This is a very long text that needs to be truncated';
+}
+```
+
+```html
+<!-- component.html -->
+<p>{{ longText | truncate:30 }}</p>
+<!-- Output: "This is a very long text th..." -->
+```
+
+**Pipe Chaining Flow:**
+```mermaid
+graph LR
+    A[Data] --> B[Pipe 1]
+    B --> C[Pipe 2]
+    C --> D[Pipe 3]
+    D --> E[Final Output]
+    
+    F[date pipe] --> G[uppercase pipe]
+    G --> H[Display]
+```
+
+---
+
+[← Previous: Angular Core Concepts (What/Why)](./02-angular-core-concepts-whatwhymd) | [Next: Directives (Control the UI) →](./04-directives-control-the-uimd)

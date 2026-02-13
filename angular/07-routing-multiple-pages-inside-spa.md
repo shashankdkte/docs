@@ -1,0 +1,863 @@
+# 7) Routing (Multiple pages inside SPA)
+
+[← Previous: Services & Dependency Injection (DI)](./06-services-and-dependency-injection-di.md) | [Next: Forms (User input) →](./08-forms-user-input.md)
+
+---
+
+### Router Basics — map URL → component
+
+**Explanation:**
+Angular Router maps URLs to components, enabling navigation in a Single Page Application without full page reloads. Routes define which component to display for each URL path.
+
+**Routing Flow:**
+```mermaid
+graph LR
+    A[URL Change] --> B[Angular Router]
+    B --> C[Match Route]
+    C --> D[Load Component]
+    D --> E[Display in Router Outlet]
+```
+
+**Router Architecture:**
+```mermaid
+graph TD
+    A[Router] --> B[Routes Configuration]
+    A --> C[Router Outlet]
+    A --> D[Navigation]
+    
+    B --> E[Path → Component Mapping]
+    C --> F[Component Display Area]
+    D --> G[RouterLink / navigate]
+```
+
+**Code Sample - Basic Routing Setup:**
+```typescript
+// app.routes.ts
+import { Routes } from '@angular/router';
+import { HomeComponent } from './home/home.component';
+import { AboutComponent } from './about/about.component';
+import { ContactComponent } from './contact/contact.component';
+import { NotFoundComponent } from './not-found/not-found.component';
+
+export const routes: Routes = [
+  { 
+    path: '', 
+    component: HomeComponent,
+    title: 'Home' // Page title
+  },
+  { 
+    path: 'about', 
+    component: AboutComponent,
+    title: 'About Us'
+  },
+  { 
+    path: 'contact', 
+    component: ContactComponent,
+    title: 'Contact'
+  },
+  { 
+    path: '**', 
+    component: NotFoundComponent,
+    title: '404 - Not Found'
+  }
+];
+```
+
+```typescript
+// app.config.ts
+import { ApplicationConfig } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { routes } from './app.routes';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(routes) // Enable routing
+  ]
+};
+```
+
+```html
+<!-- app.component.html -->
+<nav>
+  <a routerLink="/">Home</a>
+  <a routerLink="/about">About</a>
+  <a routerLink="/contact">Contact</a>
+</nav>
+
+<!-- Router outlet displays routed components -->
+<router-outlet></router-outlet>
+```
+
+**Route Matching Flow:**
+```mermaid
+sequenceDiagram
+    participant User
+    participant Router
+    participant Routes
+    participant Component
+
+    User->>Router: Navigate to /about
+    Router->>Routes: Match path
+    Routes->>Router: Found: AboutComponent
+    Router->>Component: Load AboutComponent
+    Component->>Router: Component ready
+    Router->>User: Display in router-outlet
+```
+
+**Code Sample - Route with Data:**
+```typescript
+// app.routes.ts
+export const routes: Routes = [
+  {
+    path: 'dashboard',
+    component: DashboardComponent,
+    data: { 
+      title: 'Dashboard',
+      requiresAuth: true 
+    }
+  }
+];
+```
+
+```typescript
+// dashboard.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+
+@Component({...})
+export class DashboardComponent implements OnInit {
+  constructor(private route: ActivatedRoute) {}
+  
+  ngOnInit(): void {
+    // Access route data
+    const title = this.route.snapshot.data['title'];
+    const requiresAuth = this.route.snapshot.data['requiresAuth'];
+    console.log('Route data:', { title, requiresAuth });
+  }
+}
+```
+
+---
+
+### RouterLink — navigation without page reload
+
+**Explanation:**
+`routerLink` is a directive that creates navigation links in templates. It navigates to routes without full page reloads, providing smooth SPA navigation.
+
+**RouterLink Types:**
+```mermaid
+graph TD
+    A[RouterLink] --> B[Basic Link]
+    A --> C[Active Link Styling]
+    A --> D[Programmatic Navigation]
+    
+    B --> E[routerLink="/path"]
+    C --> F[routerLinkActive]
+    D --> G[Router.navigate()]
+```
+
+**Navigation Flow:**
+```mermaid
+sequenceDiagram
+    participant User
+    participant Link as RouterLink
+    participant Router
+    participant Component
+
+    User->>Link: Click link
+    Link->>Router: Navigate to route
+    Router->>Router: Update URL (no reload)
+    Router->>Component: Load component
+    Component->>User: Display new view
+```
+
+**Code Sample - Basic RouterLink:**
+```html
+<!-- navigation.component.html -->
+<nav>
+  <!-- Basic routerLink -->
+  <a routerLink="/">Home</a>
+  <a routerLink="/about">About</a>
+  <a routerLink="/contact">Contact</a>
+  
+  <!-- routerLink with array syntax -->
+  <a [routerLink]="['/users', userId]">User Profile</a>
+  
+  <!-- routerLink with query params -->
+  <a [routerLink]="['/products']" [queryParams]="{ category: 'electronics' }">
+    Electronics
+  </a>
+  
+  <!-- Active link styling -->
+  <a routerLink="/dashboard" 
+     routerLinkActive="active"
+     [routerLinkActiveOptions]="{ exact: true }">
+    Dashboard
+  </a>
+</nav>
+```
+
+```css
+/* navigation.component.css */
+.active {
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+}
+```
+
+**Code Sample - Programmatic Navigation:**
+```typescript
+// component.ts
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-navigation',
+  standalone: true,
+  template: `
+    <div>
+      <button (click)="goToHome()">Go Home</button>
+      <button (click)="goToAbout()">Go About</button>
+      <button (click)="goToUser(123)">View User</button>
+      <button (click)="goBack()">Go Back</button>
+    </div>
+  `
+})
+export class NavigationComponent {
+  constructor(private router: Router) {}
+  
+  goToHome(): void {
+    this.router.navigate(['/']);
+  }
+  
+  goToAbout(): void {
+    this.router.navigate(['/about']);
+  }
+  
+  goToUser(userId: number): void {
+    this.router.navigate(['/users', userId]);
+  }
+  
+  goBack(): void {
+    this.router.navigate(['../'], { relativeTo: this.route });
+  }
+  
+  // Navigate with query params
+  searchProducts(category: string): void {
+    this.router.navigate(['/products'], {
+      queryParams: { category, page: 1 }
+    });
+  }
+}
+```
+
+**RouterLink Options:**
+```mermaid
+graph LR
+    A[RouterLink Options] --> B[routerLinkActive]
+    A --> C[routerLinkActiveOptions]
+    A --> D[queryParams]
+    A --> E[fragment]
+    
+    B --> F[Add Class When Active]
+    C --> G[Exact Match Options]
+    D --> H[Query Parameters]
+    E --> I[URL Fragment]
+```
+
+---
+
+### Route Params — pass id like /users/10
+
+**Explanation:**
+Route parameters allow you to pass dynamic values in the URL path (e.g., `/users/10` where `10` is the user ID). These parameters are extracted from the URL and can be accessed in the component.
+
+**Route Params Flow:**
+```mermaid
+graph LR
+    A[URL: /users/10] --> B[Route: /users/:id]
+    B --> C[Extract :id = 10]
+    C --> D[Component Access]
+```
+
+**Param Types:**
+```mermaid
+graph TD
+    A[Route Parameters] --> B[Path Params<br/>/users/:id]
+    A --> C[Query Params<br/>?page=1]
+    A --> D[Matrix Params<br/>/users;id=10]
+    
+    B --> E[Required]
+    C --> F[Optional]
+    D --> G[Optional]
+```
+
+**Code Sample - Route with Parameters:**
+```typescript
+// app.routes.ts
+export const routes: Routes = [
+  {
+    path: 'users',
+    component: UserListComponent
+  },
+  {
+    path: 'users/:id', // :id is a route parameter
+    component: UserDetailComponent
+  },
+  {
+    path: 'users/:id/posts/:postId', // Multiple params
+    component: UserPostComponent
+  }
+];
+```
+
+```typescript
+// user-detail.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+
+@Component({
+  selector: 'app-user-detail',
+  standalone: true,
+  template: `
+    <div *ngIf="user">
+      <h2>User Details</h2>
+      <p>ID: {{ userId }}</p>
+      <p>Name: {{ user.name }}</p>
+      <p>Email: {{ user.email }}</p>
+      <button (click)="goToPosts()">View Posts</button>
+      <button (click)="goBack()">Back</button>
+    </div>
+  `
+})
+export class UserDetailComponent implements OnInit {
+  userId: number = 0;
+  user: any = null;
+  
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
+  
+  ngOnInit(): void {
+    // Get route parameter (snapshot - one time)
+    this.userId = +this.route.snapshot.paramMap.get('id')!;
+    
+    // Or subscribe to param changes (for same route navigation)
+    this.route.paramMap.subscribe(params => {
+      this.userId = +params.get('id')!;
+      this.loadUser();
+    });
+  }
+  
+  loadUser(): void {
+    // Load user data based on ID
+    // this.userService.getUser(this.userId).subscribe(...)
+  }
+  
+  goToPosts(): void {
+    this.router.navigate(['/users', this.userId, 'posts']);
+  }
+  
+  goBack(): void {
+    this.router.navigate(['/users']);
+  }
+}
+```
+
+**Code Sample - Multiple Route Parameters:**
+```typescript
+// user-post.component.ts
+export class UserPostComponent implements OnInit {
+  userId: number = 0;
+  postId: number = 0;
+  
+  constructor(private route: ActivatedRoute) {}
+  
+  ngOnInit(): void {
+    // Get multiple params
+    this.userId = +this.route.snapshot.paramMap.get('id')!;
+    this.postId = +this.route.snapshot.paramMap.get('postId')!;
+    
+    // Or subscribe to all param changes
+    this.route.paramMap.subscribe(params => {
+      this.userId = +params.get('id')!;
+      this.postId = +params.get('postId')!;
+      this.loadPost();
+    });
+  }
+  
+  loadPost(): void {
+    // Load post data
+  }
+}
+```
+
+**Route Parameter Access Methods:**
+```mermaid
+graph TD
+    A[Access Route Params] --> B[Snapshot]
+    A --> C[Observable]
+    
+    B --> D[One-time Read]
+    C --> E[Subscribe to Changes]
+    
+    D --> F[route.snapshot.paramMap]
+    E --> G[route.paramMap.subscribe]
+```
+
+**Parameter Extraction Flow:**
+```mermaid
+sequenceDiagram
+    participant URL
+    participant Router
+    participant Route
+    participant Component
+
+    URL->>Router: /users/123
+    Router->>Route: Match /users/:id
+    Route->>Router: Extract id=123
+    Router->>Component: Provide paramMap
+    Component->>Component: Get id from paramMap
+```
+
+---
+
+### Query Params — filters like ?page=2
+
+**Explanation:**
+Query parameters are optional key-value pairs in the URL (e.g., `?page=2&sort=name`). They're used for filtering, pagination, and optional configuration without changing the route path.
+
+**Query Params vs Route Params:**
+```mermaid
+graph LR
+    A[URL Parameters] --> B[Route Params<br/>/users/:id]
+    A --> C[Query Params<br/>?page=2]
+    
+    B --> D[Required in Path]
+    C --> E[Optional in Query]
+```
+
+**Query Params Flow:**
+```mermaid
+graph LR
+    A[URL: /products?page=2&sort=name] --> B[Extract Query Params]
+    B --> C[page=2, sort=name]
+    C --> D[Component Access]
+```
+
+**Code Sample - Using Query Params:**
+```typescript
+// product-list.component.ts
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+
+@Component({
+  selector: 'app-product-list',
+  standalone: true,
+  template: `
+    <div>
+      <h2>Products</h2>
+      <div>
+        <label>Page:</label>
+        <input type="number" [(ngModel)]="page" (change)="updateQueryParams()">
+        <label>Sort:</label>
+        <select [(ngModel)]="sort" (change)="updateQueryParams()">
+          <option value="name">Name</option>
+          <option value="price">Price</option>
+        </select>
+      </div>
+      <ul>
+        <li *ngFor="let product of products">{{ product.name }}</li>
+      </ul>
+    </div>
+  `
+})
+export class ProductListComponent implements OnInit {
+  page: number = 1;
+  sort: string = 'name';
+  products: any[] = [];
+  
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
+  
+  ngOnInit(): void {
+    // Get query params (snapshot)
+    this.page = +(this.route.snapshot.queryParamMap.get('page') || 1);
+    this.sort = this.route.snapshot.queryParamMap.get('sort') || 'name';
+    
+    // Or subscribe to query param changes
+    this.route.queryParamMap.subscribe(params => {
+      this.page = +(params.get('page') || 1);
+      this.sort = params.get('sort') || 'name';
+      this.loadProducts();
+    });
+  }
+  
+  updateQueryParams(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { 
+        page: this.page, 
+        sort: this.sort 
+      },
+      queryParamsHandling: 'merge' // Preserve other params
+    });
+  }
+  
+  loadProducts(): void {
+    // Load products with filters
+    console.log(`Loading page ${this.page}, sorted by ${this.sort}`);
+  }
+}
+```
+
+**Code Sample - RouterLink with Query Params:**
+```html
+<!-- component.html -->
+<div>
+  <!-- Static query params -->
+  <a [routerLink]="['/products']" [queryParams]="{ page: 1, sort: 'name' }">
+    Products Page 1
+  </a>
+  
+  <!-- Dynamic query params -->
+  <a [routerLink]="['/products']" [queryParams]="{ page: currentPage, category: selectedCategory }">
+    Filtered Products
+  </a>
+  
+  <!-- Preserve query params -->
+  <a [routerLink]="['/products']" 
+     [queryParams]="{ page: 2 }"
+     queryParamsHandling="merge">
+    Products (preserve existing params)
+  </a>
+</div>
+```
+
+**Query Params Handling:**
+```mermaid
+graph TD
+    A[Query Params Handling] --> B[merge]
+    A --> C[preserve]
+    A --> D[replace]
+    
+    B --> E[Add/Update Params]
+    C --> F[Keep Existing]
+    D --> G[Replace All]
+```
+
+---
+
+### Guards — protect routes (auth/role checks)
+
+**Explanation:**
+Route guards control whether a route can be activated or deactivated. They're used for authentication, authorization, and preventing navigation under certain conditions.
+
+**Guard Types:**
+```mermaid
+graph TD
+    A[Route Guards] --> B[CanActivate]
+    A --> C[CanDeactivate]
+    A --> D[CanActivateChild]
+    A --> E[CanLoad]
+    A --> F[Resolve]
+    
+    B --> G[Allow/Deny Access]
+    C --> H[Prevent Leaving]
+    D --> I[Protect Child Routes]
+    E --> J[Prevent Lazy Load]
+    F --> K[Pre-fetch Data]
+```
+
+**Guard Flow:**
+```mermaid
+sequenceDiagram
+    participant User
+    participant Router
+    participant Guard
+    participant Route
+
+    User->>Router: Navigate to protected route
+    Router->>Guard: Check canActivate
+    alt Guard allows
+        Guard->>Route: Allow navigation
+        Route->>User: Show component
+    else Guard denies
+        Guard->>Router: Block navigation
+        Router->>User: Redirect/Show error
+    end
+```
+
+**Code Sample - Auth Guard:**
+```typescript
+// auth.guard.ts
+import { Injectable } from '@angular/core';
+import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { AuthService } from './auth.service';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthGuard implements CanActivate {
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+  
+  canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): boolean {
+    if (this.authService.isAuthenticated()) {
+      return true; // Allow navigation
+    } else {
+      // Redirect to login
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: state.url }
+      });
+      return false; // Block navigation
+    }
+  }
+}
+```
+
+```typescript
+// role.guard.ts
+@Injectable({
+  providedIn: 'root'
+})
+export class RoleGuard implements CanActivate {
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+  
+  canActivate(route: ActivatedRouteSnapshot): boolean {
+    const requiredRole = route.data['role'];
+    const userRole = this.authService.getUserRole();
+    
+    if (userRole === requiredRole) {
+      return true;
+    } else {
+      this.router.navigate(['/unauthorized']);
+      return false;
+    }
+  }
+}
+```
+
+**Code Sample - Using Guards in Routes:**
+```typescript
+// app.routes.ts
+import { AuthGuard } from './guards/auth.guard';
+import { RoleGuard } from './guards/role.guard';
+
+export const routes: Routes = [
+  { path: 'login', component: LoginComponent },
+  { 
+    path: 'dashboard', 
+    component: DashboardComponent,
+    canActivate: [AuthGuard] // Protect route
+  },
+  {
+    path: 'admin',
+    component: AdminComponent,
+    canActivate: [AuthGuard, RoleGuard], // Multiple guards
+    data: { role: 'admin' }
+  },
+  {
+    path: 'profile',
+    component: ProfileComponent,
+    canActivate: [AuthGuard],
+    canDeactivate: [UnsavedChangesGuard] // Prevent leaving with unsaved changes
+  }
+];
+```
+
+**Code Sample - CanDeactivate Guard:**
+```typescript
+// unsaved-changes.guard.ts
+import { Injectable } from '@angular/core';
+import { CanDeactivate } from '@angular/router';
+
+export interface CanComponentDeactivate {
+  canDeactivate(): boolean;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class UnsavedChangesGuard implements CanDeactivate<CanComponentDeactivate> {
+  canDeactivate(component: CanComponentDeactivate): boolean {
+    if (component.canDeactivate()) {
+      return true;
+    } else {
+      return confirm('You have unsaved changes. Are you sure you want to leave?');
+    }
+  }
+}
+```
+
+```typescript
+// profile.component.ts
+export class ProfileComponent implements CanComponentDeactivate {
+  hasUnsavedChanges: boolean = false;
+  
+  canDeactivate(): boolean {
+    if (this.hasUnsavedChanges) {
+      return false; // Block navigation
+    }
+    return true; // Allow navigation
+  }
+}
+```
+
+**Guard Execution Order:**
+```mermaid
+graph TD
+    A[Navigation Request] --> B[CanLoad]
+    B --> C[CanActivate]
+    C --> D[Resolve]
+    D --> E[Component Loads]
+    E --> F[CanDeactivate<br/>on Leave]
+```
+
+---
+
+### Lazy Loading — load features only when needed for performance
+
+**Explanation:**
+Lazy loading loads feature modules only when they're needed (when user navigates to that route). This improves initial load time by splitting the app into smaller chunks.
+
+**Lazy Loading Benefits:**
+- Faster initial load
+- Smaller bundle size
+- Better performance
+- Code splitting
+
+**Lazy Loading Flow:**
+```mermaid
+graph TD
+    A[User Navigates] --> B[Route Matched]
+    B --> C{Module Loaded?}
+    C -->|No| D[Load Module Chunk]
+    C -->|Yes| E[Use Cached Module]
+    D --> F[Load Component]
+    E --> F
+    F --> G[Display]
+```
+
+**Loading Comparison:**
+```mermaid
+graph LR
+    A[Eager Loading] --> B[All Modules Loaded]
+    B --> C[Large Initial Bundle]
+    
+    D[Lazy Loading] --> E[Load on Demand]
+    E --> F[Small Initial Bundle]
+```
+
+**Code Sample - Lazy Loading Setup:**
+```typescript
+// app.routes.ts
+export const routes: Routes = [
+  { path: '', component: HomeComponent },
+  {
+    path: 'admin',
+    loadChildren: () => import('./admin/admin.routes').then(m => m.adminRoutes)
+  },
+  {
+    path: 'products',
+    loadChildren: () => import('./products/products.routes').then(m => m.productRoutes)
+  },
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent)
+  }
+];
+```
+
+```typescript
+// admin/admin.routes.ts
+import { Routes } from '@angular/router';
+import { AuthGuard } from '../guards/auth.guard';
+
+export const adminRoutes: Routes = [
+  {
+    path: '',
+    loadComponent: () => import('./admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'users',
+    loadComponent: () => import('./user-management/user-management.component').then(m => m.UserManagementComponent)
+  }
+];
+```
+
+**Code Sample - Standalone Component Lazy Loading:**
+```typescript
+// app.routes.ts
+export const routes: Routes = [
+  {
+    path: 'products',
+    loadChildren: () => import('./products/products.routes').then(m => m.routes)
+  }
+];
+
+// products/products.routes.ts
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+  {
+    path: '',
+    loadComponent: () => 
+      import('./product-list/product-list.component').then(m => m.ProductListComponent)
+  },
+  {
+    path: ':id',
+    loadComponent: () => 
+      import('./product-detail/product-detail.component').then(m => m.ProductDetailComponent)
+  }
+];
+```
+
+**Lazy Loading Architecture:**
+```mermaid
+sequenceDiagram
+    participant User
+    participant Router
+    participant Browser
+    participant Server
+
+    User->>Router: Navigate to /admin
+    Router->>Browser: Check if module loaded
+    alt Not loaded
+        Browser->>Server: Request admin chunk
+        Server-->>Browser: Return module chunk
+        Browser->>Browser: Load module
+    end
+    Browser->>Router: Module ready
+    Router->>User: Display component
+```
+
+**Performance Impact:**
+```mermaid
+graph LR
+    A[Initial Load] --> B[Main Bundle]
+    B --> C[Small Size]
+    
+    D[Feature Access] --> E[Lazy Chunk]
+    E --> F[Load on Demand]
+    
+    C --> G[Fast Initial Load]
+    F --> H[Faster Navigation]
+```
+
+---
+
+[← Previous: Services & Dependency Injection (DI)](./06-services-and-dependency-injection-di.md) | [Next: Forms (User input) →](./08-forms-user-input.md)

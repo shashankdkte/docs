@@ -1,0 +1,334 @@
+# 12) Styling & UI
+
+[← Previous: State Management (Beginner → Next step)](./11-state-management-beginner-next-step.md) | [Next: Build, Deploy & Best Practices →](./13-build-deploy-and-best-practices.md)
+
+---
+
+### Component Styles — scoped CSS per component
+
+**Explanation:**
+Each Angular component can have its own CSS file. By default, styles are scoped to the component, preventing style conflicts.
+
+**Component Style Scope:**
+```mermaid
+graph TD
+    A[Component Styles] --> B[Scoped to Component]
+    B --> C[No Global Conflicts]
+    C --> D[Isolated Styling]
+```
+
+**Code Sample - Component Styles:**
+```typescript
+// button.component.ts
+@Component({
+  selector: 'app-button',
+  standalone: true,
+  template: '<button class="btn">Click Me</button>',
+  styles: [`
+    .btn {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+  `]
+})
+export class ButtonComponent {}
+```
+
+```css
+/* button.component.css */
+.btn {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background-color: #0056b3;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+```
+
+**Style Encapsulation:**
+```mermaid
+graph LR
+    A[Component CSS] --> B[Angular Scopes]
+    B --> C[Unique Attributes]
+    C --> D[Isolated Styles]
+```
+
+---
+
+### Global Styles — app-wide styles
+
+**Explanation:**
+Global styles apply to the entire application. They're defined in `styles.css` or `angular.json` and are useful for resets, typography, and shared utilities.
+
+**Global vs Component Styles:**
+```mermaid
+graph TD
+    A[Styles] --> B[Global Styles]
+    A --> C[Component Styles]
+    
+    B --> D[App-wide]
+    C --> E[Component-scoped]
+```
+
+**Code Sample - Global Styles:**
+```css
+/* styles.css - Global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+}
+```
+
+**Code Sample - Using Global Styles:**
+```html
+<!-- Any component can use global classes -->
+<div class="container">
+  <button class="btn-primary">Global Button</button>
+</div>
+```
+
+---
+
+### View Encapsulation — how Angular scopes styles
+
+**Explanation:**
+View Encapsulation controls how Angular scopes component styles. Options: Emulated (default), None, or ShadowDom.
+
+**Encapsulation Types:**
+```mermaid
+graph TD
+    A[View Encapsulation] --> B[Emulated - Default]
+    A --> C[None - Global]
+    A --> D[ShadowDom - Native]
+    
+    B --> E[Scoped Styles]
+    C --> F[No Scoping]
+    D --> G[Shadow DOM]
+```
+
+**Code Sample - Encapsulation Options:**
+```typescript
+import { Component, ViewEncapsulation } from '@angular/core';
+
+// Emulated (default) - styles are scoped
+@Component({
+  selector: 'app-example',
+  encapsulation: ViewEncapsulation.Emulated, // Default
+  styles: ['.btn { color: red; }']
+})
+
+// None - styles are global
+@Component({
+  selector: 'app-example',
+  encapsulation: ViewEncapsulation.None,
+  styles: ['.btn { color: red; }'] // Applies globally
+})
+
+// ShadowDom - uses native Shadow DOM
+@Component({
+  selector: 'app-example',
+  encapsulation: ViewEncapsulation.ShadowDom,
+  styles: ['.btn { color: red; }']
+})
+```
+
+**Encapsulation Comparison:**
+```mermaid
+graph LR
+    A[Emulated] --> B[Scoped with Attributes]
+    C[None] --> D[No Scoping]
+    E[ShadowDom] --> F[Native Isolation]
+```
+
+---
+
+### UI Libraries — Angular Material / Tailwind / Bootstrap basics
+
+**Explanation:**
+UI libraries provide pre-built components and styles. Popular choices include Angular Material, Tailwind CSS, and Bootstrap.
+
+**UI Library Options:**
+```mermaid
+graph TD
+    A[UI Libraries] --> B[Angular Material]
+    A --> C[Tailwind CSS]
+    A --> D[Bootstrap]
+    
+    B --> E[Component Library]
+    C --> F[Utility Classes]
+    D --> G[CSS Framework]
+```
+
+**Code Sample - Angular Material:**
+```bash
+# Install Angular Material
+ng add @angular/material
+```
+
+```typescript
+// app.config.ts
+import { provideAnimations } from '@angular/platform-browser/animations';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideAnimations()]
+};
+```
+
+```typescript
+// component.ts
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+
+@Component({
+  standalone: true,
+  imports: [MatButtonModule, MatCardModule],
+  template: `
+    <mat-card>
+      <mat-card-title>Card Title</mat-card-title>
+      <mat-card-content>Content</mat-card-content>
+      <mat-card-actions>
+        <button mat-button>Action</button>
+      </mat-card-actions>
+    </mat-card>
+  `
+})
+```
+
+**Code Sample - Tailwind CSS:**
+```bash
+# Install Tailwind
+npm install -D tailwindcss
+npx tailwindcss init
+```
+
+```html
+<!-- component.html -->
+<div class="container mx-auto p-4">
+  <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+    Tailwind Button
+  </button>
+</div>
+```
+
+**Code Sample - Bootstrap:**
+```bash
+# Install Bootstrap
+npm install bootstrap
+```
+
+```typescript
+// styles.css
+@import 'bootstrap/dist/css/bootstrap.min.css';
+```
+
+```html
+<!-- component.html -->
+<div class="container">
+  <button class="btn btn-primary">Bootstrap Button</button>
+</div>
+```
+
+---
+
+### Responsive UI Basics — mobile-friendly layouts
+
+**Explanation:**
+Responsive design ensures your app works on all screen sizes. Use CSS media queries, flexbox, and grid for responsive layouts.
+
+**Responsive Breakpoints:**
+```mermaid
+graph LR
+    A[Mobile] --> B[Tablet]
+    B --> C[Desktop]
+    
+    A --> D[< 768px]
+    B --> E[768px - 1024px]
+    C --> F[> 1024px]
+```
+
+**Code Sample - Responsive Layout:**
+```css
+/* component.css */
+.container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+```
+
+**Code Sample - Flexbox Responsive:**
+```css
+.navbar {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .navbar {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+```
+
+**Responsive Design Principles:**
+```mermaid
+graph TD
+    A[Responsive Design] --> B[Mobile First]
+    A --> C[Flexible Layouts]
+    A --> D[Media Queries]
+    A --> E[Touch Friendly]
+```
+
+---
+
+[← Previous: State Management (Beginner → Next step)](./11-state-management-beginner-next-step.md) | [Next: Build, Deploy & Best Practices →](./13-build-deploy-and-best-practices.md)

@@ -1,0 +1,659 @@
+# 5) Components Communication (How components talk)
+
+[← Previous: Directives (Control the UI)](./04-directives-control-the-uimd) | [Next: Services & Dependency Injection (DI) →](./06-services-and-dependency-injection-dimd)
+
+---
+
+### @Input() — parent → child data
+
+**Explanation:**
+`@Input()` allows a parent component to pass data down to a child component. The child component receives and can use this data in its template and logic.
+
+**Data Flow:**
+```mermaid
+graph LR
+    A[Parent Component] -->|Passes Data| B[@Input Property]
+    B --> C[Child Component]
+    C --> D[Uses Data in Template]
+```
+
+**Communication Flow:**
+```mermaid
+sequenceDiagram
+    participant Parent
+    participant Angular
+    participant Child
+
+    Parent->>Angular: <app-child [data]="parentData">
+    Angular->>Child: Set @Input() data
+    Child->>Child: Use data in template/logic
+    Note over Child: Data updates when parent changes
+```
+
+**Code Sample:**
+```typescript
+// child.component.ts
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+
+@Component({
+  selector: 'app-child',
+  standalone: true,
+  template: `
+    <div class="child">
+      <h3>Child Component</h3>
+      <p>Name: {{ userName }}</p>
+      <p>Age: {{ userAge }}</p>
+      <p>Status: {{ isActive ? 'Active' : 'Inactive' }}</p>
+      <p>User Object: {{ user | json }}</p>
+    </div>
+  `
+})
+export class ChildComponent implements OnChanges {
+  // Basic input
+  @Input() userName: string = '';
+  
+  // Input with alias
+  @Input('userAge') age: number = 0;
+  
+  // Input with default value
+  @Input() isActive: boolean = false;
+  
+  // Input with object
+  @Input() user: { name: string; email: string } = { name: '', email: '' };
+  
+  // Watch for input changes
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['userName']) {
+      console.log('Name changed:', changes['userName'].currentValue);
+    }
+  }
+}
+```
+
+```typescript
+// parent.component.ts
+import { Component } from '@angular/core';
+import { ChildComponent } from './child/child.component';
+
+@Component({
+  selector: 'app-parent',
+  standalone: true,
+  imports: [ChildComponent],
+  template: `
+    <div class="parent">
+      <h2>Parent Component</h2>
+      <input [(ngModel)]="name" placeholder="Enter name">
+      <input type="number" [(ngModel)]="age" placeholder="Enter age">
+      <button (click)="toggleActive()">Toggle Status</button>
+      
+      <!-- Pass data to child -->
+      <app-child 
+        [userName]="name"
+        [userAge]="age"
+        [isActive]="active"
+        [user]="userObject">
+      </app-child>
+    </div>
+  `
+})
+export class ParentComponent {
+  name: string = 'John Doe';
+  age: number = 30;
+  active: boolean = true;
+  
+  userObject = {
+    name: 'John Doe',
+    email: 'john@example.com'
+  };
+  
+  toggleActive(): void {
+    this.active = !this.active;
+  }
+}
+```
+
+**Input Property Binding Flow:**
+```mermaid
+graph TD
+    A[Parent Property] --> B[Property Binding]
+    B --> C[@Input Decorator]
+    C --> D[Child Property]
+    D --> E[Child Template]
+    
+    F[parentData] --> G[[data]="parentData"]
+    G --> H[@Input data]
+    H --> I[childData]
+```
+
+---
+
+### @Output() + EventEmitter — child → parent events
+
+**Explanation:**
+`@Output()` with `EventEmitter` allows a child component to send data or events up to its parent component. The parent can listen to these events and react accordingly.
+
+**Event Flow:**
+```mermaid
+graph LR
+    A[Child Component] -->|Emits Event| B[@Output EventEmitter]
+    B --> C[Parent Component]
+    C --> D[Handles Event]
+```
+
+**Communication Flow:**
+```mermaid
+sequenceDiagram
+    participant Child
+    participant Angular
+    participant Parent
+
+    Child->>Child: User action (click, etc.)
+    Child->>Angular: this.eventEmitter.emit(data)
+    Angular->>Parent: (event)="handleEvent($event)"
+    Parent->>Parent: Execute handler method
+```
+
+**Code Sample:**
+```typescript
+// child.component.ts
+import { Component, Output, EventEmitter } from '@angular/core';
+
+@Component({
+  selector: 'app-child',
+  standalone: true,
+  template: `
+    <div class="child">
+      <h3>Child Component</h3>
+      <input [(ngModel)]="message" placeholder="Enter message">
+      <button (click)="sendMessage()">Send to Parent</button>
+      <button (click)="notifyParent()">Notify Parent</button>
+      <button (click)="deleteItem()">Delete</button>
+    </div>
+  `
+})
+export class ChildComponent {
+  message: string = '';
+  
+  // Basic output event
+  @Output() messageSent = new EventEmitter<string>();
+  
+  // Output with custom event name
+  @Output('notify') notification = new EventEmitter<void>();
+  
+  // Output with data object
+  @Output() itemDeleted = new EventEmitter<{ id: number; name: string }>();
+  
+  sendMessage(): void {
+    if (this.message.trim()) {
+      this.messageSent.emit(this.message);
+      this.message = '';
+    }
+  }
+  
+  notifyParent(): void {
+    this.notification.emit();
+  }
+  
+  deleteItem(): void {
+    this.itemDeleted.emit({ id: 1, name: 'Sample Item' });
+  }
+}
+```
+
+```typescript
+// parent.component.ts
+import { Component } from '@angular/core';
+import { ChildComponent } from './child/child.component';
+
+@Component({
+  selector: 'app-parent',
+  standalone: true,
+  imports: [ChildComponent],
+  template: `
+    <div class="parent">
+      <h2>Parent Component</h2>
+      <p>Received message: {{ receivedMessage }}</p>
+      <p>Notification count: {{ notificationCount }}</p>
+      <p>Deleted item: {{ deletedItem | json }}</p>
+      
+      <!-- Listen to child events -->
+      <app-child 
+        (messageSent)="onMessageReceived($event)"
+        (notify)="onNotification()"
+        (itemDeleted)="onItemDeleted($event)">
+      </app-child>
+    </div>
+  `
+})
+export class ParentComponent {
+  receivedMessage: string = '';
+  notificationCount: number = 0;
+  deletedItem: any = null;
+  
+  onMessageReceived(message: string): void {
+    this.receivedMessage = message;
+    console.log('Message received:', message);
+  }
+  
+  onNotification(): void {
+    this.notificationCount++;
+    alert('Notification received from child!');
+  }
+  
+  onItemDeleted(item: { id: number; name: string }): void {
+    this.deletedItem = item;
+    console.log('Item deleted:', item);
+  }
+}
+```
+
+**Two-Way Binding with @Input/@Output:**
+```typescript
+// child.component.ts
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+
+@Component({
+  selector: 'app-counter',
+  standalone: true,
+  template: `
+    <div>
+      <button (click)="decrement()">-</button>
+      <span>{{ count }}</span>
+      <button (click)="increment()">+</button>
+    </div>
+  `
+})
+export class CounterComponent {
+  @Input() count: number = 0;
+  @Output() countChange = new EventEmitter<number>();
+  
+  increment(): void {
+    this.count++;
+    this.countChange.emit(this.count);
+  }
+  
+  decrement(): void {
+    this.count--;
+    this.countChange.emit(this.count);
+  }
+}
+```
+
+```html
+<!-- parent.component.html -->
+<!-- Two-way binding with custom component -->
+<app-counter [(count)]="counterValue"></app-counter>
+<p>Parent counter: {{ counterValue }}</p>
+```
+
+**Output Event Flow:**
+```mermaid
+graph TD
+    A[Child Action] --> B[EventEmitter.emit]
+    B --> C[@Output Decorator]
+    C --> D[Parent Event Binding]
+    D --> E[Parent Handler Method]
+    
+    F[User Clicks] --> G[childMethod]
+    G --> H[this.output.emit]
+    H --> I[(output)="parentMethod"]
+```
+
+---
+
+### Shared Service — sibling/any → any communication using a common service
+
+**Explanation:**
+A shared service acts as a central communication hub. Multiple components can inject the same service instance to share data and communicate with each other, regardless of their relationship in the component tree.
+
+**Service Communication Flow:**
+```mermaid
+graph TD
+    A[Service] --> B[Component A]
+    A --> C[Component B]
+    A --> D[Component C]
+    
+    B -->|Update Data| A
+    A -->|Notify| C
+    A -->|Notify| D
+```
+
+**Service Architecture:**
+```mermaid
+sequenceDiagram
+    participant CompA as Component A
+    participant Service as Shared Service
+    participant CompB as Component B
+
+    CompA->>Service: Update data
+    Service->>Service: Store/Process data
+    Service->>CompB: Notify subscribers
+    CompB->>Service: Get updated data
+```
+
+**Code Sample:**
+```typescript
+// data.service.ts
+import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root' // Singleton service
+})
+export class DataService {
+  // Private BehaviorSubject to store current value
+  private messageSubject = new BehaviorSubject<string>('Initial message');
+  
+  // Public Observable for components to subscribe
+  public message$: Observable<string> = this.messageSubject.asObservable();
+  
+  // Private data store
+  private users: any[] = [];
+  private usersSubject = new BehaviorSubject<any[]>([]);
+  public users$: Observable<any[]> = this.usersSubject.asObservable();
+  
+  // Methods to update data
+  setMessage(message: string): void {
+    this.messageSubject.next(message);
+  }
+  
+  getMessage(): string {
+    return this.messageSubject.value;
+  }
+  
+  addUser(user: any): void {
+    this.users.push(user);
+    this.usersSubject.next([...this.users]);
+  }
+  
+  getUsers(): any[] {
+    return this.users;
+  }
+}
+```
+
+```typescript
+// component-a.component.ts
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { DataService } from './data.service';
+
+@Component({
+  selector: 'app-component-a',
+  standalone: true,
+  template: `
+    <div>
+      <h3>Component A</h3>
+      <input [(ngModel)]="inputMessage" placeholder="Enter message">
+      <button (click)="sendMessage()">Send Message</button>
+      <p>Received: {{ receivedMessage }}</p>
+    </div>
+  `
+})
+export class ComponentA implements OnInit, OnDestroy {
+  inputMessage: string = '';
+  receivedMessage: string = '';
+  private subscription?: Subscription;
+  
+  constructor(private dataService: DataService) {}
+  
+  ngOnInit(): void {
+    // Subscribe to message changes
+    this.subscription = this.dataService.message$.subscribe(
+      message => {
+        this.receivedMessage = message;
+      }
+    );
+  }
+  
+  ngOnDestroy(): void {
+    // Clean up subscription
+    this.subscription?.unsubscribe();
+  }
+  
+  sendMessage(): void {
+    this.dataService.setMessage(this.inputMessage);
+    this.inputMessage = '';
+  }
+}
+```
+
+```typescript
+// component-b.component.ts
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { DataService } from './data.service';
+
+@Component({
+  selector: 'app-component-b',
+  standalone: true,
+  template: `
+    <div>
+      <h3>Component B</h3>
+      <p>Message from service: {{ message }}</p>
+      <ul>
+        <li *ngFor="let user of users">{{ user.name }}</li>
+      </ul>
+    </div>
+  `
+})
+export class ComponentB implements OnInit, OnDestroy {
+  message: string = '';
+  users: any[] = [];
+  private subscriptions: Subscription[] = [];
+  
+  constructor(private dataService: DataService) {}
+  
+  ngOnInit(): void {
+    // Subscribe to message
+    const messageSub = this.dataService.message$.subscribe(
+      msg => this.message = msg
+    );
+    this.subscriptions.push(messageSub);
+    
+    // Subscribe to users
+    const usersSub = this.dataService.users$.subscribe(
+      users => this.users = users
+    );
+    this.subscriptions.push(usersSub);
+  }
+  
+  ngOnDestroy(): void {
+    // Clean up all subscriptions
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+  }
+}
+```
+
+**Service Communication Patterns:**
+```mermaid
+graph TD
+    A[Shared Service] --> B[BehaviorSubject]
+    A --> C[Observable]
+    A --> D[Methods]
+    
+    B --> E[Store Current Value]
+    C --> F[Subscribe to Changes]
+    D --> G[Update Data]
+    
+    E --> H[Components Get Data]
+    F --> I[Components React to Changes]
+    G --> J[Trigger Updates]
+```
+
+---
+
+### Content Projection (ng-content) — pass HTML content into a component
+
+**Explanation:**
+Content projection (using `<ng-content>`) allows you to pass HTML content from a parent component into a child component. This is useful for creating reusable wrapper components.
+
+**Content Projection Flow:**
+```mermaid
+graph LR
+    A[Parent HTML] --> B[Child Component]
+    B --> C[ng-content]
+    C --> D[Rendered Content]
+```
+
+**Projection Types:**
+```mermaid
+graph TD
+    A[Content Projection] --> B[Single Slot]
+    A --> C[Multi-Slot]
+    A --> D[Conditional]
+    
+    B --> E[<ng-content>]
+    C --> F[<ng-content select>
+    D --> G[*ngIf with ng-content]
+```
+
+**Code Sample - Single Slot Projection:**
+```typescript
+// card.component.ts
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-card',
+  standalone: true,
+  template: `
+    <div class="card">
+      <div class="card-header">
+        <h3>{{ title }}</h3>
+      </div>
+      <div class="card-body">
+        <!-- Projected content goes here -->
+        <ng-content></ng-content>
+      </div>
+      <div class="card-footer" *ngIf="showFooter">
+        <ng-content select="[footer]"></ng-content>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px;
+    }
+    .card-header {
+      border-bottom: 1px solid #eee;
+      margin-bottom: 16px;
+    }
+    .card-footer {
+      border-top: 1px solid #eee;
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+  `]
+})
+export class CardComponent {
+  @Input() title: string = 'Card Title';
+  @Input() showFooter: boolean = false;
+}
+```
+
+```html
+<!-- parent.component.html -->
+<app-card title="User Profile" [showFooter]="true">
+  <!-- This content is projected into ng-content -->
+  <p>Name: John Doe</p>
+  <p>Email: john@example.com</p>
+  <p>Age: 30</p>
+  
+  <!-- Footer content with selector -->
+  <div footer>
+    <button>Edit</button>
+    <button>Delete</button>
+  </div>
+</app-card>
+```
+
+**Code Sample - Multi-Slot Projection:**
+```typescript
+// tab-container.component.ts
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-tab-container',
+  standalone: true,
+  template: `
+    <div class="tab-container">
+      <div class="tab-headers">
+        <button 
+          *ngFor="let tab of tabs" 
+          (click)="selectTab(tab)"
+          [class.active]="activeTab === tab">
+          {{ tab }}
+        </button>
+      </div>
+      <div class="tab-content">
+        <!-- Project header content -->
+        <ng-content select="[tab-header]"></ng-content>
+        
+        <!-- Project body content -->
+        <ng-content select="[tab-body]"></ng-content>
+        
+        <!-- Default projection (no selector) -->
+        <ng-content></ng-content>
+      </div>
+    </div>
+  `
+})
+export class TabContainerComponent {
+  tabs: string[] = ['Tab 1', 'Tab 2', 'Tab 3'];
+  activeTab: string = 'Tab 1';
+  
+  selectTab(tab: string): void {
+    this.activeTab = tab;
+  }
+}
+```
+
+```html
+<!-- parent.component.html -->
+<app-tab-container>
+  <div tab-header>
+    <h2>Custom Header</h2>
+  </div>
+  
+  <div tab-body>
+    <p>This is the body content</p>
+  </div>
+  
+  <p>This is default projected content</p>
+</app-tab-container>
+```
+
+**Content Projection Processing Flow:**
+```mermaid
+sequenceDiagram
+    participant Parent
+    participant Angular
+    participant Child
+    participant DOM
+
+    Parent->>Angular: <app-child>Content</app-child>
+    Angular->>Child: Find <ng-content>
+    Angular->>Child: Insert parent content
+    Child->>DOM: Render with projected content
+```
+
+**Use Cases for Content Projection:**
+```mermaid
+graph TD
+    A[Content Projection Use Cases] --> B[Wrapper Components]
+    A --> C[Layout Components]
+    A --> D[Modal/Dialog]
+    A --> E[Card Components]
+    
+    B --> F[app-container]
+    C --> G[app-layout]
+    D --> H[app-modal]
+    E --> I[app-card]
+```
+
+---
+
+[← Previous: Directives (Control the UI)](./04-directives-control-the-uimd) | [Next: Services & Dependency Injection (DI) →](./06-services-and-dependency-injection-dimd)

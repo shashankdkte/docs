@@ -1,0 +1,370 @@
+# 13) Build, Deploy & Best Practices
+
+[← Previous: Styling & UI](./12-styling-and-ui.md) | [Back to Overview →](./overview.md)
+
+---
+
+### Build — ng build generates production bundle
+
+**Explanation:**
+The `ng build` command compiles your Angular app into optimized production bundles ready for deployment.
+
+**Build Process:**
+```mermaid
+graph TD
+    A[ng build] --> B[Compile TypeScript]
+    B --> C[Bundle Code]
+    C --> D[Optimize]
+    D --> E[Generate dist/]
+```
+
+**Code Sample - Build Commands:**
+```bash
+# Development build
+ng build
+
+# Production build (optimized)
+ng build --configuration production
+
+# Build with specific output path
+ng build --output-path=./dist/my-app
+
+# Build with source maps (for debugging)
+ng build --source-map
+```
+
+**Build Output:**
+```
+dist/
+├── index.html
+├── main.[hash].js
+├── polyfills.[hash].js
+├── runtime.[hash].js
+└── styles.[hash].css
+```
+
+**Build Configuration:**
+```json
+// angular.json
+{
+  "projects": {
+    "my-app": {
+      "architect": {
+        "build": {
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractCss": true
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+### Production Optimization — minification, caching, budgets
+
+**Explanation:**
+Production builds optimize your app through minification, tree-shaking, and code splitting. Budgets help monitor bundle sizes.
+
+**Optimization Techniques:**
+```mermaid
+graph TD
+    A[Optimization] --> B[Minification]
+    A --> C[Tree Shaking]
+    A --> D[Code Splitting]
+    A --> E[Lazy Loading]
+    
+    B --> F[Smaller Files]
+    C --> G[Remove Unused Code]
+    D --> H[Split Bundles]
+    E --> I[Load on Demand]
+```
+
+**Code Sample - Budget Configuration:**
+```json
+// angular.json
+{
+  "projects": {
+    "my-app": {
+      "architect": {
+        "build": {
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Optimization Features:**
+- Minification: Reduces file size
+- Uglification: Obfuscates code
+- Tree-shaking: Removes unused code
+- AOT compilation: Ahead-of-time compilation
+- Bundle optimization: Code splitting
+
+---
+
+### Linting & Formatting — consistent code style
+
+**Explanation:**
+Linting and formatting tools ensure consistent code style across your project, catching errors and enforcing best practices.
+
+**Linting Tools:**
+```mermaid
+graph TD
+    A[Code Quality] --> B[ESLint]
+    A --> C[Prettier]
+    A --> D[Angular ESLint]
+    
+    B --> E[Find Errors]
+    C --> F[Format Code]
+    D --> G[Angular Rules]
+```
+
+**Code Sample - ESLint Setup:**
+```bash
+# Install ESLint
+ng add @angular-eslint/schematics
+```
+
+```json
+// .eslintrc.json
+{
+  "extends": [
+    "plugin:@angular-eslint/recommended"
+  ],
+  "rules": {
+    "@angular-eslint/directive-selector": [
+      "error",
+      {
+        "type": "attribute",
+        "prefix": "app",
+        "style": "camelCase"
+      }
+    ]
+  }
+}
+```
+
+**Code Sample - Prettier Setup:**
+```json
+// .prettierrc
+{
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "tabWidth": 2,
+  "semi": true
+}
+```
+
+```json
+// package.json
+{
+  "scripts": {
+    "lint": "ng lint",
+    "format": "prettier --write \"src/**/*.{ts,html,css,scss}\""
+  }
+}
+```
+
+---
+
+### Testing Basics — unit tests (Jasmine/Karma) + e2e ideas
+
+**Explanation:**
+Angular uses Jasmine for unit testing and Karma as the test runner. Testing ensures your code works correctly and prevents regressions.
+
+**Testing Types:**
+```mermaid
+graph TD
+    A[Testing] --> B[Unit Tests]
+    A --> C[Integration Tests]
+    A --> D[E2E Tests]
+    
+    B --> E[Component Logic]
+    C --> F[Component Interaction]
+    D --> G[Full User Flow]
+```
+
+**Code Sample - Unit Test:**
+```typescript
+// component.spec.ts
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MyComponent } from './my.component';
+
+describe('MyComponent', () => {
+  let component: MyComponent;
+  let fixture: ComponentFixture<MyComponent>;
+  
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [MyComponent]
+    }).compileComponents();
+    
+    fixture = TestBed.createComponent(MyComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+  
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+  
+  it('should increment count', () => {
+    component.count = 0;
+    component.increment();
+    expect(component.count).toBe(1);
+  });
+});
+```
+
+**Code Sample - Service Test:**
+```typescript
+// service.spec.ts
+import { TestBed } from '@angular/core/testing';
+import { UserService } from './user.service';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+
+describe('UserService', () => {
+  let service: UserService;
+  
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule]
+    });
+    service = TestBed.inject(UserService);
+  });
+  
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+});
+```
+
+**Running Tests:**
+```bash
+# Run unit tests
+ng test
+
+# Run with coverage
+ng test --code-coverage
+
+# Run e2e tests
+ng e2e
+```
+
+---
+
+### Folder Structure & Naming — readable, scalable project organization
+
+**Explanation:**
+A well-organized folder structure makes your codebase maintainable and scalable. Follow Angular style guide conventions.
+
+**Recommended Structure:**
+```mermaid
+graph TD
+    A[src/app] --> B[core/]
+    A --> C[shared/]
+    A --> D[features/]
+    A --> E[layouts/]
+    
+    B --> F[Services, Guards]
+    C --> G[Components, Pipes]
+    D --> H[Feature Modules]
+    E --> I[Layout Components]
+```
+
+**Code Sample - Folder Structure:**
+```
+src/app/
+├── core/
+│   ├── services/
+│   │   ├── auth.service.ts
+│   │   └── api.service.ts
+│   ├── guards/
+│   │   └── auth.guard.ts
+│   └── interceptors/
+│       └── auth.interceptor.ts
+├── shared/
+│   ├── components/
+│   │   ├── button/
+│   │   └── card/
+│   ├── pipes/
+│   │   └── truncate.pipe.ts
+│   └── directives/
+│       └── highlight.directive.ts
+├── features/
+│   ├── users/
+│   │   ├── user-list/
+│   │   ├── user-detail/
+│   │   └── user.service.ts
+│   └── products/
+│       ├── product-list/
+│       └── product-detail/
+├── layouts/
+│   ├── main-layout/
+│   └── auth-layout/
+└── app.component.ts
+```
+
+**Naming Conventions:**
+```mermaid
+graph LR
+    A[Naming] --> B[Components: kebab-case]
+    A --> C[Files: kebab-case]
+    A --> D[Classes: PascalCase]
+    A --> E[Variables: camelCase]
+```
+
+**Best Practices:**
+- Use feature-based organization
+- Keep components small and focused
+- Separate concerns (services, components, models)
+- Use barrel exports (index.ts)
+- Follow Angular style guide
+
+One Practical Use Case (to learn Angular end-to-end)
+“Simple Task Manager” (Beginner Project)
+
+You will learn Angular by building:
+
+Task List Page — show tasks using *ngFor
+
+Add Task Form — input + validation
+
+Edit / Delete — button events + update UI
+
+Task Service — store tasks in memory first, then move to API
+
+Routing — /tasks, /tasks/:id
+
+HTTP Integration (optional) — connect to a fake API (later a real backend)
+
+Polish — filters (completed/pending), search, local storage
+
+---
+
+[← Previous: Styling & UI](./12-styling-and-ui.md) | [Back to Overview →](./overview.md)
