@@ -1,0 +1,302 @@
+# 1) Setup & Installation
+
+[← Previous: Before Angular (must-have basics)](./00-before-angular.md) | [Next: Angular Core Concepts (What/Why) →](./02-angular-core-concepts-whatwhy.md)
+
+---
+
+### Install Node.js (LTS) — required to run Angular tools
+
+**Explanation:**
+Node.js LTS (Long Term Support) is the stable version recommended for Angular development. It provides the JavaScript runtime environment needed to run Angular CLI and build tools.
+
+**Why LTS?**
+- Stable and reliable
+- Long-term support and security updates
+- Compatible with Angular tooling
+
+**Installation Steps:**
+1. Visit [nodejs.org](https://nodejs.org)
+2. Download LTS version (recommended)
+3. Run installer (Windows/Mac) or use package manager (Linux)
+4. Verify installation
+
+**Code Sample:**
+```bash
+# Check Node.js version (should be 18.x or 20.x LTS)
+node --version
+
+# Check npm version (comes with Node.js)
+npm --version
+```
+
+**Installation Flow:**
+```mermaid
+graph TD
+    A[Download Node.js LTS] --> B[Run Installer]
+    B --> C[Add to PATH]
+    C --> D[Verify Installation]
+    D --> E{Node.js Working?}
+    E -->|Yes| F[Ready for Angular]
+    E -->|No| G[Check PATH/Reinstall]
+```
+
+---
+
+### Install Angular CLI — command-line tool to create/run/build Angular apps
+
+**Explanation:**
+Angular CLI (Command Line Interface) is a powerful tool that automates common development tasks. It generates components, services, modules, and handles building/testing your application.
+
+**Key Commands:**
+- `ng new` - Create new project
+- `ng generate` (or `ng g`) - Generate components, services, etc.
+- `ng serve` - Run development server
+- `ng build` - Build for production
+- `ng test` - Run tests
+
+**Code Sample:**
+```bash
+# Install Angular CLI globally
+npm install -g @angular/cli
+
+# Verify installation
+ng version
+
+# Get help
+ng help
+```
+
+**CLI Architecture:**
+```mermaid
+graph LR
+    A[Angular CLI] --> B[Project Generator]
+    A --> C[Development Server]
+    A --> D[Build Tools]
+    A --> E[Code Generators]
+    
+    B --> F[ng new]
+    C --> G[ng serve]
+    D --> H[ng build]
+    E --> I[ng generate]
+```
+
+---
+
+### Create New Project — ng new generates a starter Angular app
+
+**Explanation:**
+The `ng new` command creates a complete Angular project structure with all necessary configuration files, dependencies, and a sample component to get you started.
+
+**What Gets Created:**
+- Project folder structure
+- Configuration files (`angular.json`, `tsconfig.json`, etc.)
+- Sample app component
+- Dependencies in `package.json`
+- Basic routing setup (if selected)
+
+**Code Sample:**
+```bash
+# Create new Angular project
+ng new my-angular-app
+
+# During creation, you'll be asked:
+# - Would you like to add Angular routing? (Yes/No)
+# - Which stylesheet format? (CSS/SCSS/SASS/Less)
+
+# Navigate to project
+cd my-angular-app
+```
+
+**Project Creation Flow:**
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant CLI as Angular CLI
+    participant npm as npm
+    participant FS as File System
+
+    Dev->>CLI: ng new my-app
+    CLI->>Dev: Ask: Routing? Styles?
+    Dev->>CLI: Select options
+    CLI->>FS: Create folder structure
+    CLI->>FS: Create config files
+    CLI->>FS: Create sample component
+    CLI->>npm: Install dependencies
+    npm-->>CLI: Dependencies installed
+    CLI-->>Dev: Project ready!
+```
+
+**Project Structure Created:**
+```mermaid
+graph TD
+    A[my-angular-app/] --> B[src/]
+    A --> C[node_modules/]
+    A --> D[angular.json]
+    A --> E[package.json]
+    A --> F[tsconfig.json]
+    
+    B --> G[app/]
+    B --> H[assets/]
+    B --> I[index.html]
+    B --> J[main.ts]
+    
+    G --> K[app.component.ts]
+    G --> L[app.component.html]
+    G --> M[app.component.css]
+```
+
+---
+
+### Run Dev Server — ng serve runs the app locally with live reload
+
+**Explanation:**
+`ng serve` starts a development server that compiles your Angular app and serves it locally. It watches for file changes and automatically reloads the browser (Hot Module Replacement).
+
+**Features:**
+- Live reload on file changes
+- Source maps for debugging
+- Fast compilation
+- Accessible at `http://localhost:4200` by default
+
+**Code Sample:**
+```bash
+# Start development server
+ng serve
+
+# Or with options
+ng serve --port 4200 --open
+
+# --port: specify port (default: 4200)
+# --open: automatically open browser
+```
+
+**Development Server Flow:**
+```mermaid
+graph LR
+    A[ng serve] --> B[Compile TypeScript]
+    B --> C[Bundle Code]
+    C --> D[Start Web Server]
+    D --> E[Watch Files]
+    E --> F{File Changed?}
+    F -->|Yes| B
+    F -->|No| G[Wait for Changes]
+    G --> E
+    D --> H[Browser: localhost:4200]
+```
+
+**Request Flow:**
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant Server as Dev Server
+    participant Compiler as Angular Compiler
+    participant FS as File System
+
+    Browser->>Server: Request localhost:4200
+    Server->>Compiler: Compile app
+    Compiler->>FS: Read source files
+    FS-->>Compiler: Source code
+    Compiler-->>Server: Compiled bundle
+    Server-->>Browser: Serve app
+    
+    Note over FS,Compiler: File changed
+    FS->>Compiler: File change detected
+    Compiler->>Compiler: Recompile
+    Compiler->>Server: Updated bundle
+    Server->>Browser: Hot reload
+```
+
+---
+
+### Project Structure Overview — know where components, assets, configs live
+
+**Explanation:**
+Understanding the Angular project structure helps you navigate and organize your code effectively. Each folder and file has a specific purpose.
+
+**Key Directories:**
+- `src/` - Source code
+- `src/app/` - Application components, services, modules
+- `src/assets/` - Static files (images, fonts, etc.)
+- `node_modules/` - Installed dependencies
+- Root config files - Build and TypeScript configuration
+
+**Detailed Structure:**
+```
+my-angular-app/
+├── src/                          # Source code
+│   ├── app/                      # Main application folder
+│   │   ├── app.component.ts      # Root component TypeScript
+│   │   ├── app.component.html    # Root component template
+│   │   ├── app.component.css     # Root component styles
+│   │   └── app.config.ts         # App configuration
+│   ├── assets/                   # Static assets
+│   │   └── .gitkeep
+│   ├── index.html                # Main HTML file
+│   ├── main.ts                   # Application entry point
+│   └── styles.css                # Global styles
+├── node_modules/                 # Dependencies (auto-generated)
+├── angular.json                  # Angular CLI configuration
+├── package.json                  # Project dependencies
+├── tsconfig.json                 # TypeScript configuration
+└── README.md                     # Project documentation
+```
+
+**File Purpose Flow:**
+```mermaid
+graph TD
+    A[index.html] --> B[Loads main.ts]
+    B --> C[main.ts Bootstraps App]
+    C --> D[app.component.ts]
+    D --> E[app.component.html]
+    D --> F[app.component.css]
+    
+    G[angular.json] --> H[Build Configuration]
+    I[package.json] --> J[Dependencies List]
+    K[tsconfig.json] --> L[TypeScript Settings]
+```
+
+**Component File Relationship:**
+```mermaid
+graph LR
+    A[Component.ts<br/>Logic] --> B[Component.html<br/>Template]
+    A --> C[Component.css<br/>Styles]
+    B --> D[Rendered UI]
+    C --> D
+```
+
+**Code Sample - Understanding Entry Point:**
+```typescript
+// main.ts - Application entry point
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app/app.component';
+import { appConfig } from './app/app.config';
+
+bootstrapApplication(AppComponent, appConfig)
+  .catch(err => console.error(err));
+```
+
+```typescript
+// app.component.ts - Root component
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  title = 'my-angular-app';
+}
+```
+
+```html
+<!-- app.component.html - Root template -->
+<div class="container">
+  <h1>{{ title }}</h1>
+  <p>Welcome to Angular!</p>
+</div>
+```
+
+---
+
+[← Previous: Before Angular (must-have basics)](./00-before-angular.md) | [Next: Angular Core Concepts (What/Why) →](./02-angular-core-concepts-whatwhy.md)
